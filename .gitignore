@@ -2,3 +2,5 @@
 .env
 cache/
 __pycache__
+.codex
+.claude

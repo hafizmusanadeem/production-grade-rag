@@ -7,6 +7,11 @@ load_dotenv()
 class Settings:
     # GEMINI
     GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
+    GEMINI_EMBEDDING_MODEL = os.getenv("GEMINI_EMBEDDING_MODEL", "gemini-embedding-001")
+
+    # CHUNKING
+    CHUNK_SIZE = int(os.getenv("CHUNK_SIZE", "1000"))
+    CHUNK_OVERLAP = int(os.getenv("CHUNK_OVERLAP", "200"))
     
     # QDRANT
     QDRANT_API_KEY = os.getenv("QDRANT_API_KEY")
