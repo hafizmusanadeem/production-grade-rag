@@ -25,6 +25,7 @@ from app.ingestion.processor import IngestionProcessor
 class ProcessingStats:
     """Statistics for a single file processing."""
     file_name: str
+    source_path: str
     file_size_kb: float
     status: str  # 'success', 'skipped', 'error'
     chunks_created: Optional[int] = None
@@ -102,6 +103,7 @@ class BatchProcessor:
                 print(f"🔄 Resuming — {len(processed_files)} file(s) already processed, skipping them")
 
         start_time = datetime.now(UTC)
+        source_path = str(file_path.resolve())
         stats: list[ProcessingStats] = []
         total_chunks = 0
 
