@@ -25,7 +25,7 @@ class Settings:
 
     # LOGFIRE
     LOGFIRE_TOKEN = os.getenv("LOGFIRE_TOKEN")
-    LOGFIRE_SERVICE_NAME = os.getenv("LOGFIRE_SERVICE_NAME", "rag-production-grade")
+    LOGFIRE_SERVICE_NAME = os.getenv("LOGFIRE_SERVICE_NAME", "starter-project")
     ENVIRONMENT = os.getenv("ENVIRONMENT", "development")
 
 settings = Settings()

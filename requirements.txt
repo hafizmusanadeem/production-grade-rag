@@ -59,3 +59,8 @@ sentence-transformers       # Used by FlashRank reranker internally
 langchain_google_genai
 
 langchain-google-vertexai
+
+
+
+# --- LOGFIRE
+opentelemetry-instrumentation-system-metrics==0.65b0

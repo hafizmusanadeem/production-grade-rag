@@ -59,3 +59,27 @@ def embed_chunks(chunks: list[Chunk]) -> list[EmbeddedChunk]:
         vector_dimension=len(embedded_chunks[0].embedding),
     )
     return embedded_chunks
+
+
+@logfire.instrument("Embed query", extract_args=("query",))
+def embed_query(query: str) -> list[float]:
+    """
+    Embed a single search query for use against vectors stored by embed_chunks().
+
+    Uses the same Gemini embedding model/client as ingestion so query and
+    document vectors live in the same space. GoogleGenerativeAIEmbeddings
+    internally tags this as a "retrieval_query" embedding (vs. "retrieval_document"
+    for embed_documents), which is the correct asymmetric mode for RAG search.
+    """
+    if not query or not query.strip():
+        raise ValueError("Query text must not be empty")
+
+    client = _build_embeddings_client()
+    vector = client.embed_query(query)
+
+    logfire.info(
+        "Query embedded",
+        model=settings.GEMINI_EMBEDDING_MODEL,
+        vector_dimension=len(vector),
+    )
+    return vector
