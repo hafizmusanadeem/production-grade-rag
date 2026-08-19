@@ -32,12 +32,12 @@ def get_qdrant_client() -> QdrantClient:
 
     if not settings.QDRANT_CLUSTER_ENDPOINT:
         raise ValueError(
-            "QDRANT_CLUSTER_ENDPOINT is required to query Qdrant"
+            "QDRANT_CLUSTER_ENDPOINT is required to connect to Qdrant"
         )
 
     if not settings.QDRANT_API_KEY:
         raise ValueError(
-            "QDRANT_API_KEY is required to query Qdrant"
+            "QDRANT_API_KEY is required to connect to Qdrant"
         )
 
     _qdrant_client = QdrantClient(
