@@ -19,7 +19,7 @@ from pathlib import Path
 from typing import Optional
 
 import logfire
-from app.config import settings
+from app.config import validate_env_vars
 from app.observability import configure_logfire
 from app.ingestion.processor import process_file
 
@@ -94,19 +94,6 @@ def process_directory(dir_path: str, data_dir: Optional[str] = None) -> None:
         sys.exit(1)
 
 
-def validate_environment() -> None:
-    """Validate required environment variables."""
-    required = ["GEMINI_API_KEY", "QDRANT_API_KEY", "QDRANT_CLUSTER_ENDPOINT", "QDRANT_COLLECTION"]
-    missing = [var for var in required if not getattr(settings, var)]
-
-    if missing:
-        print("❌ Missing required environment variables:")
-        for var in missing:
-            print(f"   - {var}")
-        print("\n📋 Please set these in your .env file")
-        sys.exit(1)
-
-
 def print_usage() -> None:
     """Print usage information."""
     print("""
@@ -138,7 +125,7 @@ Supported file types:
 def main() -> None:
     """Main entry point."""
     configure_logging()
-    validate_environment()
+    validate_env_vars()
 
     if len(sys.argv) < 2:
         print_usage()

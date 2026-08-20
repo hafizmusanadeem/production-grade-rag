@@ -6,7 +6,7 @@ import logfire
 from qdrant_client import QdrantClient
 from qdrant_client.http import models as qmodels
 
-from app.config import settings
+from app.config import settings, validate_env_vars
 from app.services.retrieval.embeddings import EmbeddedChunk, embed_query
 
 
@@ -25,20 +25,12 @@ _qdrant_client: QdrantClient | None = None
 
 def get_qdrant_client() -> QdrantClient:
     """Return the cached Qdrant client, creating it lazily if necessary."""
+    validate_env_vars()
+
     global _qdrant_client
 
     if _qdrant_client is not None:
         return _qdrant_client
-
-    if not settings.QDRANT_CLUSTER_ENDPOINT:
-        raise ValueError(
-            "QDRANT_CLUSTER_ENDPOINT is required to connect to Qdrant"
-        )
-
-    if not settings.QDRANT_API_KEY:
-        raise ValueError(
-            "QDRANT_API_KEY is required to connect to Qdrant"
-        )
 
     _qdrant_client = QdrantClient(
         url=settings.QDRANT_CLUSTER_ENDPOINT,

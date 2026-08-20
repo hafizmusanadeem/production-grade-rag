@@ -16,7 +16,7 @@ from pathlib import Path
 from typing import Optional
 
 import logfire
-from app.config import settings
+from app.config import settings, validate_env_vars
 from app.observability import configure_logfire
 from app.ingestion.processor import IngestionProcessor
 
@@ -97,13 +97,12 @@ class BatchProcessor:
             with open(resume_from) as f:
                 prev_report = json.load(f)
                 processed_files = {
-                    s["file_name"] for s in prev_report["files"]
+                    s["source_path"] for s in prev_report["files"]
                     if s["status"] == "success"
                 }
                 print(f"🔄 Resuming — {len(processed_files)} file(s) already processed, skipping them")
 
         start_time = datetime.now(UTC)
-        source_path = str(file_path.resolve())
         stats: list[ProcessingStats] = []
         total_chunks = 0
 
@@ -111,7 +110,7 @@ class BatchProcessor:
         print("=" * 70)
 
         for idx, file_path in enumerate(files, 1):
-            if file_path.name in processed_files:
+            if str(file_path.resolve()) in processed_files:
                 print(f"[{idx}/{len(files)}] ⏭️  {file_path.name} (already processed)")
                 continue
 
@@ -142,7 +141,7 @@ class BatchProcessor:
                 prev_report = json.load(f)
             prev_files = [
                 ProcessingStats(**s) for s in prev_report["files"]
-                if s["file_name"] in processed_files
+                if s["source_path"] in processed_files
             ]
             stats = prev_files + stats
             successful += len(prev_files)
@@ -182,6 +181,7 @@ class BatchProcessor:
 
             return ProcessingStats(
                 file_name=file_path.name,
+                source_path=str(file_path.resolve()),
                 file_size_kb=file_size_kb,
                 status="success",
                 chunks_created=result.chunk_count,
@@ -193,6 +193,7 @@ class BatchProcessor:
             # Expected errors - skip silently
             return ProcessingStats(
                 file_name=file_path.name,
+                source_path=str(file_path.resolve()),
                 file_size_kb=file_size_kb,
                 status="skipped",
                 error_message=str(e),
@@ -209,6 +210,7 @@ class BatchProcessor:
 
             return ProcessingStats(
                 file_name=file_path.name,
+                source_path=str(file_path.resolve()),
                 file_size_kb=file_size_kb,
                 status="error",
                 error_message=str(e),
@@ -300,13 +302,7 @@ Examples:
 def main() -> None:
     """Main entry point."""
     configure_logfire()
-
-    if not settings.GEMINI_API_KEY:
-        print("❌ GEMINI_API_KEY not set")
-        sys.exit(1)
-    if not settings.QDRANT_API_KEY:
-        print("❌ QDRANT_API_KEY not set")
-        sys.exit(1)
+    validate_env_vars()
 
     args = sys.argv[1:]
 

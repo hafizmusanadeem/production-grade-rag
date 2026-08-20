@@ -29,3 +29,24 @@ class Settings:
     ENVIRONMENT = os.getenv("ENVIRONMENT", "development")
 
 settings = Settings()
+
+
+def validate_env_vars() -> None:
+    required = [
+        "GEMINI_API_KEY",
+        "QDRANT_API_KEY",
+        "QDRANT_CLUSTER_ENDPOINT",
+        "QDRANT_COLLECTION",
+    ]
+
+    missing = [
+        name
+        for name in required
+        if not getattr(settings, name)
+    ]
+
+    if missing:
+        raise ValueError(
+            "Missing required environment variables: "
+            + ", ".join(missing)
+        )
