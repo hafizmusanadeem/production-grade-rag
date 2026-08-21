@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Batch processor with progress tracking, error recovery, and detailed reporting.
+Production-grade batch processor.
 
 Usage:
     python batch_processor.py /path/to/documents/
@@ -8,26 +8,29 @@ Usage:
     python batch_processor.py --resume report.json
 """
 
+import argparse
 import json
 import sys
 from dataclasses import asdict, dataclass
-from datetime import datetime, UTC
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Optional
 
 import logfire
+
 from app.config import settings, validate_env_vars
-from app.observability import configure_logfire
 from app.ingestion.processor import IngestionProcessor
+from app.observability import configure_logfire
 
 
 @dataclass
 class ProcessingStats:
-    """Statistics for a single file processing."""
+    """Statistics for a single file processing attempt."""
+
     file_name: str
     source_path: str
     file_size_kb: float
-    status: str  # 'success', 'skipped', 'error'
+    status: str  # success, skipped, error
     chunks_created: Optional[int] = None
     error_message: Optional[str] = None
     processing_time_sec: Optional[float] = None
@@ -36,7 +39,8 @@ class ProcessingStats:
 
 @dataclass
 class BatchProcessingReport:
-    """Summary report for entire batch processing."""
+    """Summary report for an entire batch."""
+
     started_at: str
     completed_at: str
     source_directory: str
@@ -52,117 +56,161 @@ class BatchProcessingReport:
 
 
 class BatchProcessor:
-    """Process multiple documents with progress tracking."""
+    """Process multiple documents with checkpoint-aware recovery."""
+
+    SUPPORTED_EXTENSIONS = frozenset(
+        {".pdf", ".docx", ".pptx", ".html", ".htm", ".txt", ".md"}
+    )
 
     def __init__(self, data_dir: Optional[str] = None):
         self.data_dir = Path(data_dir or "DATA")
         self.processor = IngestionProcessor(data_dir=self.data_dir)
-        self.supported_extensions = {
-            ".pdf", ".docx", ".pptx", ".html", ".htm", ".txt", ".md"
-        }
 
     def process_directory(
         self,
         directory: Path,
         resume_from: Optional[Path] = None,
     ) -> BatchProcessingReport:
-        """
-        Process all supported files in directory.
+        """Process all supported files in a directory."""
 
-        Args:
-            directory: Path to directory containing files
-            resume_from: Optional path to previous processing report for resuming
+        directory = directory.resolve()
 
-        Returns:
-            BatchProcessingReport with complete statistics
-        """
         if not directory.exists() or not directory.is_dir():
             raise ValueError(f"Directory not found: {directory}")
 
-        # Get all supported files
-        files = [
-            f for f in directory.rglob("*")
-            if f.is_file() and f.suffix.lower() in self.supported_extensions
-        ]
+        files = sorted(
+            (
+                path
+                for path in directory.rglob("*")
+                if path.is_file()
+                and path.suffix.lower() in self.SUPPORTED_EXTENSIONS
+            ),
+            key=lambda path: str(path).lower(),
+        )
 
         if not files:
             raise ValueError(
                 f"No supported files found in {directory}. "
-                f"Supported: {', '.join(self.supported_extensions)}"
+                f"Supported: {', '.join(sorted(self.SUPPORTED_EXTENSIONS))}"
             )
 
-        # Load previous results if resuming
-        processed_files: set[str] = set()
-        if resume_from and resume_from.exists():
-            with open(resume_from) as f:
-                prev_report = json.load(f)
-                processed_files = {
-                    s["source_path"] for s in prev_report["files"]
-                    if s["status"] == "success"
-                }
-                print(f"🔄 Resuming — {len(processed_files)} file(s) already processed, skipping them")
+        previous_report = self._load_resume_report(resume_from)
+
+        processed_files = self._get_successful_paths(previous_report)
+
+        embedding_files = {
+            path.stem.removesuffix(".embeddings")
+            for path in self.processor.embeddings_dir.glob("*.embeddings.json")
+        }
+
+        for file_path in files:
+            if file_path.stem in embedding_files:
+                processed_files.add(str(file_path.resolve()))
+
+        logfire.info(
+            "Local embedding checkpoints detected",
+            embedding_file_count=len(embedding_files),
+            skipped_file_count=len(processed_files),
+        )
 
         start_time = datetime.now(UTC)
-        stats: list[ProcessingStats] = []
+        current_stats: list[ProcessingStats] = []
         total_chunks = 0
 
-        print(f"📁 Processing {len(files)} file(s) from {directory}")
-        print("=" * 70)
+        logfire.info(
+            "Batch processing started",
+            directory=str(directory),
+            file_count=len(files),
+            resume_enabled=resume_from is not None,
+        )
 
-        for idx, file_path in enumerate(files, 1):
-            if str(file_path.resolve()) in processed_files:
-                print(f"[{idx}/{len(files)}] ⏭️  {file_path.name} (already processed)")
+        for index, file_path in enumerate(files, start=1):
+            resolved_path = str(file_path.resolve())
+
+            if resolved_path in processed_files:
+                logfire.info(
+                    "File skipped",
+                    current=index,
+                    total=len(files),
+                    file_name=file_path.name,
+                    reason="already processed or embedded",
+                )
                 continue
 
-            file_stat = self._process_single_file(file_path, idx, len(files))
-            stats.append(file_stat)
+            file_stat = self._process_single_file(
+                file_path=file_path,
+                current=index,
+                total=len(files),
+            )
+
+            current_stats.append(file_stat)
 
             if file_stat.status == "success":
                 total_chunks += file_stat.chunks_created or 0
-                print(
-                    f"[{idx}/{len(files)}] ✅ {file_path.name} "
-                    f"({file_stat.chunks_created} chunks, {file_stat.processing_time_sec:.2f}s)"
+
+                logfire.info(
+                    "File processed successfully",
+                    current=index,
+                    total=len(files),
+                    file_name=file_path.name,
+                    chunks_created=file_stat.chunks_created or 0,
+                    processing_time_sec=file_stat.processing_time_sec,
                 )
+
             elif file_stat.status == "skipped":
-                print(f"[{idx}/{len(files)}] ⏭️  {file_path.name} (skipped: {file_stat.error_message})")
+                logfire.warning(
+                    "File skipped",
+                    current=index,
+                    total=len(files),
+                    file_name=file_path.name,
+                    reason=file_stat.error_message,
+                )
+
             else:
-                print(f"[{idx}/{len(files)}] ❌ {file_path.name} (error: {file_stat.error_message})")
+                logfire.error(
+                    "File processing failed",
+                    current=index,
+                    total=len(files),
+                    file_name=file_path.name,
+                    error=file_stat.error_message,
+                )
 
         end_time = datetime.now(UTC)
-        total_time = (end_time - start_time).total_seconds()
 
-        successful = len([s for s in stats if s.status == "success"])
-        failed = len([s for s in stats if s.status == "error"])
-        skipped = len([s for s in stats if s.status == "skipped"])
+        previous_stats = self._get_previous_stats(previous_report)
 
-        # Carry forward stats from a resumed run so the report reflects the full batch
-        if resume_from and resume_from.exists():
-            with open(resume_from) as f:
-                prev_report = json.load(f)
-            prev_files = [
-                ProcessingStats(**s) for s in prev_report["files"]
-                if s["source_path"] in processed_files
-            ]
-            stats = prev_files + stats
-            successful += len(prev_files)
-            total_chunks += sum(s.chunks_created or 0 for s in prev_files)
+        stats = self._merge_stats(
+            previous_stats=previous_stats,
+            current_stats=current_stats,
+        )
+
+        successful = sum(stat.status == "success" for stat in stats)
+        failed = sum(stat.status == "error" for stat in stats)
+        skipped = sum(stat.status == "skipped" for stat in stats)
+
+        total_chunks = sum(
+            stat.chunks_created or 0
+            for stat in stats
+            if stat.status == "success"
+        )
 
         report = BatchProcessingReport(
             started_at=start_time.isoformat(),
             completed_at=end_time.isoformat(),
-            source_directory=str(directory.resolve()),
+            source_directory=str(directory),
             total_files=len(files),
             successful=successful,
             failed=failed,
             skipped=skipped,
             total_chunks=total_chunks,
-            total_processing_time_sec=total_time,
+            total_processing_time_sec=(end_time - start_time).total_seconds(),
             data_directory=str(self.data_dir),
             qdrant_collection=settings.QDRANT_COLLECTION or "unknown",
             files=stats,
         )
 
-        self._print_summary(report)
+        self._log_summary(report)
+
         return report
 
     def _process_single_file(
@@ -171,17 +219,49 @@ class BatchProcessor:
         current: int,
         total: int,
     ) -> ProcessingStats:
-        """Process a single file with error handling."""
+        """Process one file and convert failures into structured statistics."""
+
         start = datetime.now(UTC)
-        file_size_kb = file_path.stat().st_size / 1024
+        resolved_path = file_path.resolve()
 
         try:
-            result = self.processor.process(file_path)
-            processing_time = (datetime.now(UTC) - start).total_seconds()
+            file_size_kb = file_path.stat().st_size / 1024
+        except OSError as exc:
+            logfire.error(
+                "Unable to inspect file",
+                file_path=str(resolved_path),
+                error=str(exc),
+            )
 
             return ProcessingStats(
                 file_name=file_path.name,
-                source_path=str(file_path.resolve()),
+                source_path=str(resolved_path),
+                file_size_kb=0.0,
+                status="error",
+                error_message=str(exc),
+                processing_time_sec=(
+                    datetime.now(UTC) - start
+                ).total_seconds(),
+            )
+
+        try:
+            logfire.info(
+                "Processing file",
+                current=current,
+                total=total,
+                file_name=file_path.name,
+                file_size_kb=round(file_size_kb, 2),
+            )
+
+            result = self.processor.process(file_path)
+
+            processing_time = (
+                datetime.now(UTC) - start
+            ).total_seconds()
+
+            return ProcessingStats(
+                file_name=file_path.name,
+                source_path=str(resolved_path),
                 file_size_kb=file_size_kb,
                 status="success",
                 chunks_created=result.chunk_count,
@@ -189,176 +269,329 @@ class BatchProcessor:
                 local_path=result.local_path,
             )
 
-        except (ValueError, FileNotFoundError) as e:
-            # Expected errors - skip silently
+        except (ValueError, FileNotFoundError) as exc:
+            processing_time = (
+                datetime.now(UTC) - start
+            ).total_seconds()
+
+            logfire.warning(
+                "File skipped due to expected processing error",
+                file_path=str(resolved_path),
+                error=str(exc),
+            )
+
             return ProcessingStats(
                 file_name=file_path.name,
-                source_path=str(file_path.resolve()),
+                source_path=str(resolved_path),
                 file_size_kb=file_size_kb,
                 status="skipped",
-                error_message=str(e),
-            )
-
-        except Exception as e:
-            # Unexpected errors - log and continue
-            processing_time = (datetime.now(UTC) - start).total_seconds()
-            logfire.error(
-                "Batch processing error",
-                file_path=str(file_path),
-                error=str(e),
-            )
-
-            return ProcessingStats(
-                file_name=file_path.name,
-                source_path=str(file_path.resolve()),
-                file_size_kb=file_size_kb,
-                status="error",
-                error_message=str(e),
+                error_message=str(exc),
                 processing_time_sec=processing_time,
             )
 
-    def _print_summary(self, report: BatchProcessingReport) -> None:
-        """Print formatted summary."""
-        print("\n" + "=" * 70)
-        print("📊 BATCH PROCESSING REPORT")
-        print("=" * 70)
-        print(f"\n⏱️  Processing Time: {report.total_processing_time_sec:.2f}s")
-        print(f"📁 Files Processed: {report.total_files}")
-        print(f"   ✅ Successful: {report.successful}")
-        print(f"   ⚠️  Skipped: {report.skipped}")
-        print(f"   ❌ Failed: {report.failed}")
-        print(f"\n📈 Total Chunks Created: {report.total_chunks}")
+        except Exception as exc:
+            processing_time = (
+                datetime.now(UTC) - start
+            ).total_seconds()
 
-        if report.successful > 0:
-            avg_chunks_per_file = report.total_chunks / report.successful
-            print(f"   Average per file: {avg_chunks_per_file:.1f}")
+            logfire.exception(
+                "Unexpected batch processing error",
+                file_path=str(resolved_path),
+            )
 
-        print(f"\n💾 Storage:")
-        print(f"   Local: {report.data_directory}")
-        print(f"   Qdrant Collection: {report.qdrant_collection}")
-        print(f"\n⏱️  Started: {report.started_at}")
-        print(f"   Completed: {report.completed_at}")
+            return ProcessingStats(
+                file_name=file_path.name,
+                source_path=str(resolved_path),
+                file_size_kb=file_size_kb,
+                status="error",
+                error_message=f"{type(exc).__name__}: {exc}",
+                processing_time_sec=processing_time,
+            )
 
-        errors = [f for f in report.files if f.status == "error"]
-        if errors:
-            print(f"\n⚠️  {len(errors)} file(s) with errors:")
-            for file_stat in errors:
-                print(f"   - {file_stat.file_name}: {file_stat.error_message}")
+    @staticmethod
+    def _load_resume_report(
+        resume_from: Optional[Path],
+    ) -> Optional[dict]:
+        """Load a previous report when resume mode is enabled."""
 
+        if resume_from is None:
+            return None
 
-def save_report(report: BatchProcessingReport, output_path: Path) -> None:
-    """Save processing report to JSON file."""
-    data = asdict(report)
-    data["files"] = [asdict(f) for f in report.files]
+        resume_from = resume_from.resolve()
 
-    with open(output_path, "w") as f:
-        json.dump(data, f, indent=2)
+        if not resume_from.exists():
+            raise ValueError(f"Resume report not found: {resume_from}")
 
-    print(f"\n📄 Report saved: {output_path}")
+        try:
+            with resume_from.open("r", encoding="utf-8") as file:
+                report = json.load(file)
+        except json.JSONDecodeError as exc:
+            raise ValueError(
+                f"Invalid JSON resume report: {resume_from}"
+            ) from exc
 
+        if not isinstance(report, dict) or "files" not in report:
+            raise ValueError(
+                f"Invalid resume report format: {resume_from}"
+            )
 
-def load_and_continue(report_path: Path, output_path: Optional[Path] = None) -> None:
-    """Continue processing from a previous report, using its original source_directory."""
-    if not report_path.exists():
-        print(f"❌ Report not found: {report_path}")
-        sys.exit(1)
-
-    with open(report_path) as f:
-        data = json.load(f)
-
-    if "source_directory" not in data:
-        print(
-            "❌ This report has no 'source_directory' (it was generated by an older "
-            "version). Re-run without --resume, pointing at your documents folder."
+        logfire.info(
+            "Resume report loaded",
+            report_path=str(resume_from),
+            previous_file_count=len(report.get("files", [])),
         )
-        sys.exit(1)
+
+        return report
+
+    @staticmethod
+    def _get_successful_paths(
+        report: Optional[dict],
+    ) -> set[str]:
+        """Return source paths successfully processed previously."""
+
+        if not report:
+            return set()
+
+        return {
+            str(Path(item["source_path"]).resolve())
+            for item in report.get("files", [])
+            if item.get("status") == "success"
+            and item.get("source_path")
+        }
+
+    @staticmethod
+    def _get_previous_stats(
+        report: Optional[dict],
+    ) -> list[ProcessingStats]:
+        """Convert valid previous report entries into ProcessingStats."""
+
+        if not report:
+            return []
+
+        stats: list[ProcessingStats] = []
+
+        for item in report.get("files", []):
+            try:
+                stats.append(ProcessingStats(**item))
+            except TypeError:
+                logfire.warning(
+                    "Invalid previous processing entry ignored",
+                    entry=item,
+                )
+
+        return stats
+
+    @staticmethod
+    def _merge_stats(
+        previous_stats: list[ProcessingStats],
+        current_stats: list[ProcessingStats],
+    ) -> list[ProcessingStats]:
+        """
+        Merge current results with previous results.
+
+        Current results win when the same source path appears in both.
+        This prevents duplicate entries during resume.
+        """
+
+        merged: dict[str, ProcessingStats] = {}
+
+        for stat in previous_stats:
+            merged[stat.source_path] = stat
+
+        for stat in current_stats:
+            merged[stat.source_path] = stat
+
+        return sorted(
+            merged.values(),
+            key=lambda stat: stat.source_path.lower(),
+        )
+
+    @staticmethod
+    def _log_summary(report: BatchProcessingReport) -> None:
+        """Write structured batch summary to Logfire."""
+
+        errors = [
+            {
+                "file_name": stat.file_name,
+                "source_path": stat.source_path,
+                "error": stat.error_message,
+            }
+            for stat in report.files
+            if stat.status == "error"
+        ]
+
+        logfire.info(
+            "Batch processing completed",
+            total_files=report.total_files,
+            successful=report.successful,
+            skipped=report.skipped,
+            failed=report.failed,
+            total_chunks=report.total_chunks,
+            total_processing_time_sec=report.total_processing_time_sec,
+            average_chunks_per_successful_file=(
+                report.total_chunks / report.successful
+                if report.successful
+                else 0.0
+            ),
+            data_directory=report.data_directory,
+            qdrant_collection=report.qdrant_collection,
+            error_count=len(errors),
+            errors=errors,
+        )
+
+
+def save_report(
+    report: BatchProcessingReport,
+    output_path: Path,
+) -> None:
+    """Persist a processing report as JSON."""
+
+    output_path = output_path.resolve()
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+
+    data = asdict(report)
+
+    with output_path.open("w", encoding="utf-8") as file:
+        json.dump(data, file, indent=2, ensure_ascii=False)
+
+    logfire.info(
+        "Batch processing report saved",
+        output_path=str(output_path),
+    )
+
+
+def load_and_continue(
+    report_path: Path,
+    output_path: Optional[Path] = None,
+) -> None:
+    """Resume processing using the source directory stored in a report."""
+
+    report_path = report_path.resolve()
+
+    if not report_path.exists():
+        raise ValueError(f"Report not found: {report_path}")
+
+    try:
+        with report_path.open("r", encoding="utf-8") as file:
+            data = json.load(file)
+    except json.JSONDecodeError as exc:
+        raise ValueError(
+            f"Invalid JSON report: {report_path}"
+        ) from exc
+
+    required_fields = {
+        "source_directory",
+        "data_directory",
+        "files",
+    }
+
+    missing_fields = required_fields - data.keys()
+
+    if missing_fields:
+        raise ValueError(
+            "Resume report is missing required fields: "
+            + ", ".join(sorted(missing_fields))
+        )
 
     directory = Path(data["source_directory"])
     processor = BatchProcessor(data_dir=data["data_directory"])
 
-    new_report = processor.process_directory(directory, resume_from=report_path)
+    new_report = processor.process_directory(
+        directory=directory,
+        resume_from=report_path,
+    )
 
-    save_report(new_report, output_path or report_path)
-
-
-def print_usage() -> None:
-    """Print usage information."""
-    print("""
-Usage: python batch_processor.py [OPTIONS] <directory>
-
-Options:
-    --output FILE           Save report to JSON file
-    --resume FILE           Resume from a previous report (skips already-succeeded files)
-    --data-dir DIR          Custom directory for embeddings (default: ./DATA)
-
-Examples:
-    python batch_processor.py ./documents/
-    python batch_processor.py --output report.json ./documents/
-    python batch_processor.py --resume report.json
-    python batch_processor.py --data-dir ./embeddings ./documents/
-    """)
+    save_report(
+        new_report,
+        output_path or report_path,
+    )
 
 
-def main() -> None:
-    """Main entry point."""
+def build_argument_parser() -> argparse.ArgumentParser:
+    """Build the command-line argument parser."""
+
+    parser = argparse.ArgumentParser(
+        description="Production-grade batch document processor."
+    )
+
+    parser.add_argument(
+        "directory",
+        nargs="?",
+        type=Path,
+        help="Directory containing documents to process.",
+    )
+
+    parser.add_argument(
+        "--output",
+        type=Path,
+        help="Path where the JSON processing report should be saved.",
+    )
+
+    parser.add_argument(
+        "--resume",
+        type=Path,
+        help="Resume from a previous JSON processing report.",
+    )
+
+    parser.add_argument(
+        "--data-dir",
+        type=Path,
+        default=Path("DATA"),
+        help="Data directory used for local processing artifacts.",
+    )
+
+    return parser
+
+
+def main() -> int:
+    """CLI entry point."""
+
     configure_logfire()
-    validate_env_vars()
-
-    args = sys.argv[1:]
-
-    if not args or "--help" in args or "-h" in args:
-        print_usage()
-        sys.exit(0)
-
-    output_file = None
-    resume_file = None
-    data_dir = None
-    directory = None
-
-    i = 0
-    while i < len(args):
-        if args[i] == "--output" and i + 1 < len(args):
-            output_file = args[i + 1]
-            i += 2
-        elif args[i] == "--resume" and i + 1 < len(args):
-            resume_file = args[i + 1]
-            i += 2
-        elif args[i] == "--data-dir" and i + 1 < len(args):
-            data_dir = args[i + 1]
-            i += 2
-        elif not args[i].startswith("--"):
-            directory = args[i]
-            i += 1
-        else:
-            i += 1
-
-    if resume_file:
-        load_and_continue(
-            Path(resume_file),
-            output_path=Path(output_file) if output_file else None,
-        )
-        return
-
-    if not directory:
-        print("❌ Directory path required")
-        print_usage()
-        sys.exit(1)
 
     try:
-        processor = BatchProcessor(data_dir=data_dir)
-        report = processor.process_directory(Path(directory))
+        validate_env_vars()
+    except Exception:
+        logfire.exception("Environment validation failed")
+        return 1
 
-        if output_file:
-            save_report(report, Path(output_file))
+    parser = build_argument_parser()
+    args = parser.parse_args()
 
-    except ValueError as e:
-        print(f"❌ Error: {e}")
-        sys.exit(1)
-    except Exception as e:
-        print(f"❌ Unexpected error: {e}")
-        logfire.error("Batch processing failed", error=str(e))
-        sys.exit(1)
+    try:
+        if args.resume:
+            load_and_continue(
+                report_path=args.resume,
+                output_path=args.output,
+            )
+            return 0
+
+        if not args.directory:
+            parser.error(
+                "directory is required unless --resume is provided"
+            )
+
+        processor = BatchProcessor(data_dir=str(args.data_dir))
+
+        report = processor.process_directory(
+            directory=args.directory,
+        )
+
+        if args.output:
+            save_report(report, args.output)
+
+        return 0 if report.failed == 0 else 1
+
+    except ValueError as exc:
+        logfire.error(
+            "Batch processor validation error",
+            error=str(exc),
+        )
+        return 1
+
+    except Exception:
+        logfire.exception("Batch processor failed unexpectedly")
+        return 1
 
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main())
