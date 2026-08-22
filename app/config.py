@@ -28,6 +28,9 @@ class Settings:
     LOGFIRE_SERVICE_NAME = os.getenv("LOGFIRE_SERVICE_NAME", "starter-project")
     ENVIRONMENT = os.getenv("ENVIRONMENT", "development")
 
+    # LOCAL
+    BACKEND_URL = "http://localhost:8000"
+
 settings = Settings()
 
 
@@ -37,6 +40,7 @@ def validate_env_vars() -> None:
         "QDRANT_API_KEY",
         "QDRANT_CLUSTER_ENDPOINT",
         "QDRANT_COLLECTION",
+        "LOGFIRE_TOKEN"
     ]
 
     missing = [
