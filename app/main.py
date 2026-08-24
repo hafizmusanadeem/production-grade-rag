@@ -1,33 +1,23 @@
 import logfire
-import os
+from typing import Optional
+from pydantic import BaseModel
+
 from app.config import settings
-
-logfire.configure(token=settings.LOGFIRE_TOKEN)
-
-# from contextlib import asynccontextmanager
 from fastapi import FastAPI, Response
 from app.agents.graph import rag_agent
 # from app.guardrails import initialize_rails, guard
 
-from pydantic import BaseModel
-from typing import Optional
 
-
-# async def startup_event(app: FastAPI)
-    # initialize_rails()
-
-    # yield
-    # shutdown
-
+logfire.configure(token=settings.LOGFIRE_TOKEN)
 app = FastAPI(title= "Enterprise Grade RAG API")
 
 class QueryRequest(BaseModel):
     q: str
     thread_id: Optional[str] = "default user"
 
-@app.get("/")
-def home():
-    return {"message": "Enterprise LangGraph RAG API is live."}
+@app.get("/health")
+def check_health():
+    return {"message": "Enterprise LangGraph RAG API is running successfully."}
 
 @app.get("/graph")
 def get_graph_image():
