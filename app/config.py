@@ -28,8 +28,14 @@ class Settings:
     LOGFIRE_SERVICE_NAME = os.getenv("LOGFIRE_SERVICE_NAME", "starter-project")
     ENVIRONMENT = os.getenv("ENVIRONMENT", "development")
 
+    # PORTKEY-GATEWAY
+    PORTKEY_API_KEY = os.getenv("PORTKEY_API_KEY")
+    PORTKEY_SLUG_1 = os.getenv("PORTKEY_SLUG_1")
+    PORTKEY_SLUG_2 = os.getenv("PORTKEY_SLUG_2")
+
     # LOCAL
     BACKEND_URL = "http://localhost:8000"
+
 
 settings = Settings()
 

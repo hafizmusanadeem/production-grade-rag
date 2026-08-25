@@ -1,6 +1,6 @@
 import logfire
 
-from app.agents.gateway import portkey_client, extract_cache_status
+from app.gateway import portkey_client, extract_cache_status
 from app.agents.state import AgentState
 
 
