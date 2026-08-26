@@ -11,16 +11,16 @@ def generate_node(state: AgentState):
     x-portkey-cache-status response header and surface Cache: Hit in the UI.
     """
 
-    query = state["current_query"]
+    is_conversational = state["current_query"] == "CONVERSATIONAL"
 
     history_str = ""
     for msg in state["messages"][:-1]:
         role = "User" if msg["role"] == "user" else "Assistant"
-        history += f"{role}: {msg["content"]}\n"
+        history_str += f"{role}: {msg['content']}\n"
 
     user_msg = state["messages"][-1]["content"] if state["messages"] else ""
 
-    if user_msg == "CONVERSATIONAL":
+    if is_conversational:
         logfire.info("Generating conversational response using memory.")
         prompt = f"""
         You are a friendly and helpful Enterprise AI Assistant.
@@ -58,36 +58,36 @@ def generate_node(state: AgentState):
         "{user_msg}"
         """
 
-        with logfire.span("LLM Synthesis"):
-            try:
-                response = portkey_client.chat.completions.create(
-                    messages = [{
-                        "role":"user",
-                        "content":prompt
-                    }],
-                    temperature = 0.1
-                )
+    with logfire.span("LLM Synthesis"):
+        try:
+            response = portkey_client.chat.completions.create(
+                messages=[{
+                    "role": "user",
+                    "content": prompt
+                }],
+                temperature=0.1
+            )
 
-                content = response.choices[0].message.content
-                cache_status = extract_cache_status(response)
-                is_cache_hit = cache_status == "HIT"
+            content = response.choices[0].message.content
+            cache_status = extract_cache_status(response)
+            is_cache_hit = cache_status == "HIT"
 
-                if is_cache_hit:
-                    logfire.info("Gateway Cache Hit - response served from PortKey cache.")
-                    plan_update = state["plan"] + ["Cache: Hit"]
-                    status = "Cache Hit - instant response"
-                else:
-                    logfire.info("Resopnse Synthesized via LLM.")
-                    plan_update = state["plan"]
-                    status = "Response generated."
+            if is_cache_hit:
+                logfire.info("Gateway Cache Hit - response served from PortKey cache.")
+                plan_update = state["plan"] + ["Cache: Hit"]
+                status = "Cache Hit - instant response"
+            else:
+                logfire.info("Response synthesized via LLM.")
+                plan_update = state["plan"]
+                status = "Response generated."
 
-                return {
-                    "final answer": content,
-                    "status": status,
-                    "plan": plan_update,
-                    "messages": [{"role": "assistant", "content": content}]
-                }
-            
-            except Exception as e:
-                logfire.error(f"LLM Generation failed: {e}")
-                raise e
+            return {
+                "final_answer": content,
+                "status": status,
+                "plan": plan_update,
+                "messages": [{"role": "assistant", "content": content}]
+            }
+
+        except Exception as e:
+            logfire.error(f"LLM Generation failed: {e}")
+            raise e

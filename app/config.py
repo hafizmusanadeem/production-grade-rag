@@ -46,7 +46,10 @@ def validate_env_vars() -> None:
         "QDRANT_API_KEY",
         "QDRANT_CLUSTER_ENDPOINT",
         "QDRANT_COLLECTION",
-        "LOGFIRE_TOKEN"
+        "LOGFIRE_TOKEN",
+        "PORTKEY_API_KEY",
+        "PORTKEY_SLUG_1",
+        "PORTKEY_SLUG_2"
     ]
 
     missing = [

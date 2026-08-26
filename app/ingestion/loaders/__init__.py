@@ -1,7 +1,3 @@
-from app.observability import configure_logfire
-
-configure_logfire()
-
 from .base import BaseLoader, LoadedDocument
 from .docx_loader import DOCXLoader
 from .html_loader import HTMLLoader
