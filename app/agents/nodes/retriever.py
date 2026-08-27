@@ -13,7 +13,7 @@ def retrieve_node(state: AgentState):
     query = state["current_query"]
 
     with logfire.span("Knowledge Retrieval"):
-        logfire.info("Searching Qdrant for: {query}")
+        logfire.info(f"Searching Qdrant for: {query}")
         raw_results = search_qdrant(query= query, limit_k= 15)
         logfire.info(f"Retrieved {len(raw_results)} candidates from Vector DB (Qdrant)")
 

@@ -4,4 +4,3 @@ cache/
 __pycache__
 .codex
 .claude
-retriever_pipeline_claude.txt

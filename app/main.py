@@ -9,7 +9,7 @@ from app.agents.graph import rag_agent
 # from app.guardrails import initialize_rails, guard
 
 configure_logfire()
-application = FastAPI(title="Enterprise Grade RAG API")
+app = FastAPI(title="Enterprise Grade RAG API")
 
 
 class QueryRequest(BaseModel):
