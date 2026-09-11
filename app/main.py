@@ -1,13 +1,15 @@
-import logfire
 from typing import Optional
 from pydantic import BaseModel
 
+import app.startup_patches
 from app.config import settings
 from fastapi import FastAPI
 from app.observability import configure_logfire
 from app.agents.graph import rag_agent
 # from app.guardrails import initialize_rails, guard
 
+
+app.startup_patches.restore_real_transformers()
 configure_logfire()
 app = FastAPI(title="Enterprise Grade RAG API")
 

@@ -1,20 +1,26 @@
+from __future__ import annotations
+
 import time
 import logfire
-from flashrank import Ranker, RerankRequest
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from flashrank import Ranker, RerankRequest
 
 
 ranker = None
 
 def get_ranker() -> Ranker:
     """
-    Initializes the FlashRank engine lazily. 
+    Initializes the FlashRank engine lazily.
     FlashRank uses a local ONNX model (ms-marco-MiniLM-L-6-v2) for ultra-fast reranking.
     """
     global ranker
     if ranker is None:
+
+        from flashrank import Ranker
         logfire.info("Initializing FlashRank Model (TinyBert) Locally")
         try:
-            # commnet
             ranker = Ranker(cache_dir="/tmp/flashrank")
         except Exception:
             ranker = Ranker()
@@ -23,12 +29,13 @@ def get_ranker() -> Ranker:
 def rerank_documents(query: str, documents: list[str], top_n: int = 5) -> list[str]:
     """
     Refines retrieval results by re-scoring documents against the query semantically.
-    
-    Why FlashRank? 
+
+    Why FlashRank?
     Standard vector search (Cosine Similarity) is fast but mathematically "fuzzy."
     FlashRank uses a Cross-Encoder approach which is much more precise but usually slow.
     FlashRank solves this by using highly optimized, quantized ONNX models locally.
     """
+
     if not documents:
         return []
 
@@ -36,15 +43,17 @@ def rerank_documents(query: str, documents: list[str], top_n: int = 5) -> list[s
     logfire.info(f" [Reranker] Sending {len(documents)} docs to FlashRank Cross-Encoder ")
 
     try:
-        ranker = get_ranker()
+        from flashrank import RerankRequest
+
+        ranker_instance = get_ranker()
 
         passages = [
-            {"id":i, "text":doc}
+            {"id": i, "text": doc}
             for i, doc in enumerate(documents)
         ]
 
-        request = RerankRequest(query = query, passages = passages)
-        results = ranker.rerank(request)
+        request = RerankRequest(query=query, passages=passages)
+        results = ranker_instance.rerank(request)
 
         reranked_docs = []
         for res in results[:top_n]:
@@ -59,4 +68,3 @@ def rerank_documents(query: str, documents: list[str], top_n: int = 5) -> list[s
     except Exception as e:
         logfire.error(f" [Reranker] Semantic Reranking Failed: {e}")
         return documents[:top_n]
-

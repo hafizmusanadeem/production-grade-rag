@@ -1,3 +1,4 @@
+print("Retrieval_Pipeline.py is just Imported")
 """
 Retrieval Pipeline for RAG System.
 
