@@ -9,22 +9,25 @@ from app.config import settings
 #   - Fallback: primary @rag/llama-3.3-70b-versatile → @brag/llama-3.1-8b-instant on failure
 #   - Cache: semantic mode (requires Portkey Enterprise — silently falls back to simple on free/starter)
 #   - Retry: 2 attempts on rate limit / server error before triggering the fallback target
-GATEWAY_CONFIG = {
-    "strategy": {"mode": "fallback"},
-    "cache": {"mode": "simple"},
-    "retry": {
-        "attempts": 2,
-        "on_status_codes": [429, 503]
-    },
-    "targets": [
-        {"override_params": {"model": f"@{settings.PORTKEY_SLUG_1}/openrouter/free"}},
-        {"override_params": {"model": f"@{settings.PORTKEY_SLUG_2}/openrouter/free"}},
-    ]
-}
+
+# GATEWAY_CONFIG = {
+#     "strategy": {"mode": "fallback"},
+#     "cache": {"mode": "simple"},
+#     "retry": {
+#         "attempts": 2,
+#         "on_status_codes": [429, 503]
+#     },
+#     "targets": [
+#         {"override_params": {"model": f"@{settings.PORTKEY_SLUG_1}/openrouter/free"}},
+#         {"override_params": {"model": f"@{settings.PORTKEY_SLUG_2}/openrouter/free"}},
+#     ]
+# } 
+
+# The upper defined GATEWAY_CONFIG is setup in portkey.com/config from where It's imported.
 
 portkey_client = Portkey(
     api_key=settings.PORTKEY_API_KEY,
-    config=GATEWAY_CONFIG
+    config= settings.PORTKEY_CONFIG_ID # Portkey Defined Config
 )
 
 
@@ -46,7 +49,7 @@ def get_langchain_llm(feature: str = "rag") -> ChatOpenAI:
         temperature=0,
         default_headers=createHeaders(
             api_key=settings.PORTKEY_API_KEY,
-            config=GATEWAY_CONFIG,
+            config=settings.PORTKEY_CONFIG_ID,
             metadata={
                 "feature": feature,
                 "_user": "rag-system",

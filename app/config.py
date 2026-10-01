@@ -32,6 +32,7 @@ class Settings:
     PORTKEY_API_KEY = os.getenv("PORTKEY_API_KEY")
     PORTKEY_SLUG_1 = os.getenv("PORTKEY_SLUG_1")
     PORTKEY_SLUG_2 = os.getenv("PORTKEY_SLUG_2")
+    PORTKEY_CONFIG_ID = os.getenv("PORTKEY_CONFIG_ID")
 
     # LOCAL
     BACKEND_URL = "http://localhost:8000"
@@ -49,7 +50,8 @@ def validate_env_vars() -> None:
         "LOGFIRE_TOKEN",
         "PORTKEY_API_KEY",
         "PORTKEY_SLUG_1",
-        "PORTKEY_SLUG_2"
+        "PORTKEY_SLUG_2",
+        "PORTKEY_CONFIG_ID"
     ]
 
     missing = [
