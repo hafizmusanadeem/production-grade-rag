@@ -1,10 +1,9 @@
 import logfire
 
-from app.observability import configure_logfire
 from app.gateway import get_langchain_llm
 from app.agents.state import AgentState
 
-configure_logfire()
+
 llm = get_langchain_llm(feature = "planner")
 
 def planner_node(state: AgentState):
