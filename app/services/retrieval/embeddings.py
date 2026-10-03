@@ -7,7 +7,10 @@ import logfire
 from langchain_google_genai import GoogleGenerativeAIEmbeddings
 
 from app.config import settings
+from app.observability import configure_logfire
 
+
+configure_logfire()
 if TYPE_CHECKING:
     from app.ingestion.chunking.chunker import Chunk
 

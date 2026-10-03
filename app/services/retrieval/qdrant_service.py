@@ -384,14 +384,8 @@ def store_embeddings(chunks: list[EmbeddedChunk]) -> int:
 # Retrieval
 # ---------------------------------------------------------------------------
 
-@logfire.instrument(
-    "Search Qdrant {query=}",
-    extract_args=("query",),
-)
-def search_qdrant(
-    query: str,
-    limit_k: int = 5,
-) -> list[RetrievedChunk]:
+@logfire.instrument("Search Qdrant {query=}",extract_args=("query",))
+def search_qdrant(query: str,limit_k: int = 5) -> list[RetrievedChunk]:
     """
     Search Qdrant using an embedded natural-language query.
 

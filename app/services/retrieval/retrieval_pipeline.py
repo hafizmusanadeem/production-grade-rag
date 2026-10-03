@@ -1,4 +1,3 @@
-print("Retrieval_Pipeline.py is just Imported")
 """
 Retrieval Pipeline for RAG System.
 
@@ -27,11 +26,13 @@ from typing import Any, Optional
 
 import logfire
 
+from app.observability import configure_logfire
 from app.services.retrieval.embeddings import embed_query
 from app.services.retrieval.qdrant_service import search_qdrant, RetrievedChunk
 from app.services.retrieval.reranker import rerank_documents
 
 
+configure_logfire()
 @dataclass
 class QueryRequest:
     """Input request model for the retrieval pipeline."""
@@ -276,11 +277,6 @@ class RetrievalPipeline:
         request = QueryRequest(query=query, limit_k=limit_k, top_n=top_n)
         response = self.process_query(request)
         return [r.page_content for r in response.results]
-
-
-def create_pipeline() -> RetrievalPipeline:
-    """Factory function to create a RetrievalPipeline instance."""
-    return RetrievalPipeline()
 
 
 # Convenience function for direct usage
