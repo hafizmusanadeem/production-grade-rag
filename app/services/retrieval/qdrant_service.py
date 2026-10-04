@@ -5,6 +5,7 @@ from __future__ import annotations
 import math
 import time
 from dataclasses import dataclass, field
+from functools import lru_cache
 from typing import Any
 
 import logfire
@@ -12,18 +13,12 @@ from qdrant_client import QdrantClient
 from qdrant_client.http import models as qmodels
 
 from app.config import settings, validate_env_vars
+from app.observability import configure_logfire
 from app.services.retrieval.embeddings import EmbeddedChunk, embed_query
 
 
-# ---------------------------------------------------------------------------
-# Configuration
-# ---------------------------------------------------------------------------
 
-QDRANT_TIMEOUT_SECONDS = 120
-QDRANT_UPSERT_BATCH_SIZE = 5
-QDRANT_MAX_RETRIES = 3
-QDRANT_RETRY_BASE_DELAY_SECONDS = 2.0
-
+configure_logfire()
 
 # ---------------------------------------------------------------------------
 # Data models
@@ -43,10 +38,21 @@ class RetrievedChunk:
 # Client
 # ---------------------------------------------------------------------------
 
-_qdrant_client: QdrantClient | None = None
+@lru_cache(maxsize=None)
+def _build_client(url: str, api_key: str, timeout: int) -> QdrantClient:
+    """
+    Get a Qdrant client for the users hitting the Qdrant Database for the rag retrieval to get information
+    """
+    logfire.info("Building the Qdrant client for users requesting")
+    return QdrantClient(
+        url=url,
+        api_key=api_key,
+        timeout=timeout if timeout is not None else settings.QDRANT_SEARCH_TIMEOUT_SECONDS
+    )
 
 
-def get_qdrant_client() -> QdrantClient:
+@lru_cache(maxsize=None)
+def get_qdrant_client(timeout: int | None = None) -> QdrantClient:
     """
     Return the cached Qdrant client.
 
@@ -54,36 +60,16 @@ def get_qdrant_client() -> QdrantClient:
     A generous request timeout is configured because embedding uploads can
     contain large HTTP payloads.
     """
-    validate_env_vars()
+    if not settings.QDRANT_CLUSTER_ENDPOINT or not settings.QDRANT_API_KEY:
+        raise ValueError("QDRANT_CLUSTER_ENDPOINT and QDRANT_API_KEY are required")
 
-    global _qdrant_client
+    logfire.info("Qdrant_Client Creation Progressing")
 
-    if _qdrant_client is not None:
-        return _qdrant_client
-
-    endpoint = settings.QDRANT_CLUSTER_ENDPOINT
-    api_key = settings.QDRANT_API_KEY
-
-    if not endpoint:
-        raise ValueError("QDRANT_CLUSTER_ENDPOINT is required")
-
-    if not api_key:
-        raise ValueError("QDRANT_API_KEY is required")
-
-    _qdrant_client = QdrantClient(
-        url=endpoint,
-        api_key=api_key,
-        timeout=QDRANT_TIMEOUT_SECONDS,
+    return _build_client(
+        url=settings.QDRANT_CLUSTER_ENDPOINT,
+        api_key=settings.QDRANT_API_KEY,
+        timeout=timeout if timeout is not None else settings.QDRANT_INGEST_TIMEOUT_SECONDS
     )
-
-    logfire.info(
-        "Qdrant client initialized",
-        endpoint=endpoint,
-        timeout_seconds=QDRANT_TIMEOUT_SECONDS,
-    )
-
-    return _qdrant_client
-
 
 # ---------------------------------------------------------------------------
 # Collection management
@@ -258,7 +244,7 @@ def _upsert_batch_with_retry(
     """
     last_error: Exception | None = None
 
-    for attempt in range(1, QDRANT_MAX_RETRIES + 1):
+    for attempt in range(1, settings.QDRANT_MAX_RETRIES + 1):
         try:
             client.upsert(
                 collection_name=collection_name,
@@ -280,10 +266,10 @@ def _upsert_batch_with_retry(
         except Exception as exc:
             last_error = exc
 
-            if attempt >= QDRANT_MAX_RETRIES:
+            if attempt >= settings.QDRANT_MAX_RETRIES:
                 break
 
-            delay = QDRANT_RETRY_BASE_DELAY_SECONDS * (2 ** (attempt - 1))
+            delay = settings.QDRANT_RETRY_BASE_DELAY_SECONDS * (2 ** (attempt - 1))
 
             logfire.warning(
                 "Qdrant batch upload failed; retrying",
@@ -292,7 +278,7 @@ def _upsert_batch_with_retry(
                 total_batches=total_batches,
                 point_count=len(points),
                 attempt=attempt,
-                max_retries=QDRANT_MAX_RETRIES,
+                max_retries=settings.QDRANT_MAX_RETRIES,
                 retry_delay_seconds=delay,
                 error=str(exc),
             )
@@ -301,7 +287,7 @@ def _upsert_batch_with_retry(
 
     raise RuntimeError(
         f"Failed to upload Qdrant batch {batch_number}/{total_batches} "
-        f"after {QDRANT_MAX_RETRIES} attempts"
+        f"after {settings.QDRANT_MAX_RETRIES} attempts"
     ) from last_error
 
 
@@ -332,7 +318,7 @@ def store_embeddings(chunks: list[EmbeddedChunk]) -> int:
 
     vector_size = _validate_chunks(chunks)
 
-    client = get_qdrant_client()
+    client = get_qdrant_client(timeout=settings.QDRANT_INGEST_TIMEOUT_SECONDS)
 
     ensure_collection(
         client=client,
@@ -343,7 +329,7 @@ def store_embeddings(chunks: list[EmbeddedChunk]) -> int:
     points = _build_points(chunks)
 
     total_points = len(points)
-    batch_size = QDRANT_UPSERT_BATCH_SIZE
+    batch_size = settings.QDRANT_UPSERT_BATCH_SIZE
     total_batches = (
         total_points + batch_size - 1
     ) // batch_size

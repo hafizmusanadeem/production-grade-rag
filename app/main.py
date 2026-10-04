@@ -3,7 +3,7 @@ from typing import Optional
 from pydantic import BaseModel
 
 import app.startup_patches
-from app.config import settings
+from app.config import validate_env_vars
 from fastapi import FastAPI
 from app.observability import configure_logfire
 from app.agents.graph import rag_agent
@@ -12,6 +12,7 @@ from app.agents.graph import rag_agent
 
 app.startup_patches.restore_real_transformers()
 configure_logfire()
+validate_env_vars()
 app = FastAPI(title="Enterprise Grade RAG API")
 
 

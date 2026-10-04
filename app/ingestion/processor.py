@@ -1,5 +1,3 @@
-# processor.py
-
 import json
 import os
 import tempfile
@@ -10,12 +8,14 @@ from pathlib import Path
 import logfire
 
 from app.config import settings
+from app.observability import configure_logfire
 from app.ingestion.chunking.chunker import chunk_documents
 from app.ingestion.loaders import load_document
 from app.services.retrieval.embeddings import EmbeddedChunk, embed_chunks
 from app.services.retrieval.qdrant_service import store_embeddings
 
 
+configure_logfire()
 @dataclass(frozen=True)
 class ProcessResult:
     """Result of processing a single document."""
