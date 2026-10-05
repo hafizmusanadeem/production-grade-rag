@@ -24,10 +24,7 @@ from app.observability import configure_logfire
 from app.ingestion.processor import process_file
 
 
-def configure_logging() -> None:
-    """Configure logfire observability."""
-    configure_logfire()
-
+configure_logfire()
 
 def process_single_file(file_path: str, data_dir: Optional[str] = None) -> None:
     """
@@ -75,7 +72,7 @@ def process_directory(dir_path: str, data_dir: Optional[str] = None) -> None:
 
     Supported formats: .pdf, .docx, .pptx, .html, .htm, .txt, .md
     """
-    from batch_processor import BatchProcessor
+    from app.ingestion.batch_processor import BatchProcessor
 
     directory = Path(dir_path)
     if not directory.exists() or not directory.is_dir():
@@ -124,7 +121,6 @@ Supported file types:
 
 def main() -> None:
     """Main entry point."""
-    configure_logging()
     validate_env_vars()
 
     if len(sys.argv) < 2:

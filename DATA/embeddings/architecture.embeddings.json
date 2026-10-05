@@ -1,12 +1,12 @@
 {
   "source": "C:\\Users\\DELL\\Desktop\\rag-production-grade\\DATA\\true_data\\architecture.pptx",
   "file_name": "architecture.pptx",
-  "created_at": "2026-08-20T05:14:45.035670+00:00",
+  "created_at": "2026-10-05T18:24:02.687006+00:00",
   "embedding_model": "gemini-embedding-001",
   "chunk_count": 64,
   "chunks": [
     {
-      "chunk_id": "41c37f42-8f42-4ce9-b3e5-301d74e2e800",
+      "chunk_id": "1ddf20d6-8282-4fa5-bb75-2e16fa083bc9",
       "page_content": "Kubernetes\nA Comprehensive Overview\nKubernetes v1.8",
       "embedding": [
         -0.019172514,
@@ -3092,7 +3092,7 @@
       }
     },
     {
-      "chunk_id": "355d9bc7-dd15-4595-b6b9-4f77e8821544",
+      "chunk_id": "132d6357-288d-4779-8cab-e94c5fdfdb33",
       "page_content": "Agenda\nIntroduction\nWho am I?\nWhat is Kubernetes?\nWhat does Kubernetes do?\nArchitecture\nMaster Components\nNode Components\nAdditional Services\nNetworking\nConcepts\nCore\nWorkloads\nNetwork\nStorage\nConfiguration\nAuth and Identity\nBehind the Scenes\nDeployment from Beginning to End",
       "embedding": [
         -0.027880467,
@@ -6178,7 +6178,7 @@
       }
     },
     {
-      "chunk_id": "7b30ca63-d54c-4d57-8c48-56545cf4df03",
+      "chunk_id": "28879493-590b-4fce-a193-dcc8306f162d",
       "page_content": "Introduction",
       "embedding": [
         -0.0040684645,
@@ -9264,7 +9264,7 @@
       }
     },
     {
-      "chunk_id": "d370a1a5-9d31-4f8c-b460-f4cd85044efc",
+      "chunk_id": "0539af87-0ee2-420a-a915-16bacdc64f5b",
       "page_content": "Intro - What is Kubernetes?\nKubernetes or K8s was a project spun out of Google as a open source  next-gen container scheduler designed with the lessons learned from  developing and managing Borg and Omega.\nKubernetes was designed from the ground-up as a loosely coupled collection  of components centered around deploying, maintaining, and scaling  applications.",
       "embedding": [
         -0.01626397,
@@ -12350,7 +12350,7 @@
       }
     },
     {
-      "chunk_id": "b47ca448-8fbc-4ce4-978f-36f4f5c90e45",
+      "chunk_id": "d89b0d85-f116-4238-8c23-4945c090ddb9",
       "page_content": "Intro - What Does Kubernetes do?\nKubernetes is the linux kernel of distributed systems.\nIt abstracts away the underlying hardware of the nodes and provides a  uniform interface for applications to be both deployed and consume the  shared pool of resources.",
       "embedding": [
         -0.012286826,
@@ -15436,7 +15436,7 @@
       }
     },
     {
-      "chunk_id": "7abbfde4-278a-40e8-a8e9-ed1c752d1fa5",
+      "chunk_id": "6506e164-6451-485b-a913-bffc74193400",
       "page_content": "Kubernetes\nArchitecture",
       "embedding": [
         -0.01799886,
@@ -18522,8 +18522,8 @@
       }
     },
     {
-      "chunk_id": "fd1a74b7-855b-4b44-99da-5f66dc01b963",
-      "page_content": "Architecture Overview\nMasters - Acts as the primary control plane for Kubernetes. Masters are  responsible at a minimum for running the API Server, scheduler, and cluster  controller. They commonly also manage storing cluster state, cloud-provider  specific components and other cluster essential services.\nNodes - Are the \u2018workers\u2019 of a Kubernetes cluster. They run a minimal agent  that manages the node itself, and are tasked with executing workloads as  designated by the master.",
+      "chunk_id": "720ee333-79f1-4d27-9aef-c4652ade17a3",
+      "page_content": "Architecture Overview\nMasters - Acts as the primary control plane for Kubernetes. Masters are  responsible at a minimum for running the API Server, scheduler, and cluster  controller. They commonly also manage storing cluster state, cloud-provider  specific components and other cluster essential services.\nNodes - Are the ‘workers’ of a Kubernetes cluster. They run a minimal agent  that manages the node itself, and are tasked with executing workloads as  designated by the master.",
       "embedding": [
         -0.020297216,
         0.005941791,
@@ -21608,7 +21608,7 @@
       }
     },
     {
-      "chunk_id": "8a43f94a-2d60-440d-b669-ee9f9fb44511",
+      "chunk_id": "db5b920e-3d19-49b8-bf78-db915e18eade",
       "page_content": "Architecture  Overview",
       "embedding": [
         -0.020524235,
@@ -24694,7 +24694,7 @@
       }
     },
     {
-      "chunk_id": "81c0288a-d244-4af2-874f-a89a067ba15b",
+      "chunk_id": "75fd9696-e8e4-4b1d-936b-a530fa8d452f",
       "page_content": "Master\nComponents",
       "embedding": [
         0.0076046623,
@@ -27780,7 +27780,7 @@
       }
     },
     {
-      "chunk_id": "62f73429-34c6-45dd-9a11-2c213b758584",
+      "chunk_id": "f0d82ead-b980-4bb3-9d3c-37fb611fafb2",
       "page_content": "Master Components\nKube-apiserver\nEtcd\nKube-controller-manager\nCloud-controller-manager\nKube-scheduler",
       "embedding": [
         -0.015995944,
@@ -30866,7 +30866,7 @@
       }
     },
     {
-      "chunk_id": "62c0cd2b-e3d4-4485-8fbd-fbdaae45ba53",
+      "chunk_id": "615e6948-d7ef-4afd-8f95-a6728772e898",
       "page_content": "kube-apiserver\nThe apiserver provides a forward facing REST interface into the kubernetes  control plane and datastore. All clients, including nodes, users and other  applications interact with kubernetes strictly through the API Server.\nIt is the true core of Kubernetes acting as the gatekeeper to the cluster by  handling authentication and authorization, request validation, mutation, and  admission control in addition to being the front-end to the backing datastore.",
       "embedding": [
         -0.026258953,
@@ -33952,7 +33952,7 @@
       }
     },
     {
-      "chunk_id": "f4ac3370-708b-4884-b7b7-b9299728b439",
+      "chunk_id": "4c643fb0-2ded-4d09-9680-1c666c251a0a",
       "page_content": "etcd\nEtcd acts as the cluster datastore; providing a strong, consistent and highly  available key-value store used for persisting cluster state.",
       "embedding": [
         -0.036472697,
@@ -37038,7 +37038,7 @@
       }
     },
     {
-      "chunk_id": "1e93cc0a-21e1-488d-8c58-168134c621d2",
+      "chunk_id": "bb276442-4291-4fea-a3c3-7c1f264c9a4f",
       "page_content": "kube-controller-manager\nThe controller-manager is the primary daemon that manages all core  component control loops. It monitors the cluster state via the apiserver and  steers the cluster towards the desired state.\nList of core controllers:\nhttps://github.com/kubernetes/kubernetes/blob/master/cmd/kube-controller-manager/app/controllermanager.go#L332",
       "embedding": [
         -0.01729638,
@@ -40124,7 +40124,7 @@
       }
     },
     {
-      "chunk_id": "ac70db92-e06c-4c42-885b-2cff9522af82",
+      "chunk_id": "3decef7d-5fd0-48e8-b975-134e38b55a8b",
       "page_content": "cloud-controller-manager\nThe cloud-controller-manager is a daemon that provides cloud-provider  specific knowledge and integration capability into the core control loop of  Kubernetes. The controllers include Node, Route, Service, and add an  additional controller to handle PersistentVolumeLabels .",
       "embedding": [
         -0.015045493,
@@ -43210,7 +43210,7 @@
       }
     },
     {
-      "chunk_id": "750ebebd-3fc4-4a79-80eb-9379ca29d1a9",
+      "chunk_id": "31a06bda-6375-4dbd-a1ed-e9cad8960ca1",
       "page_content": "kube-scheduler\nKube-scheduler is a verbose policy-rich engine that evaluates workload  requirements and attempts to place it on a matching resource. These  requirements can include such things as general hardware reqs, affinity,  anti-affinity, and other custom resource requirements.",
       "embedding": [
         -0.025563557,
@@ -46296,7 +46296,7 @@
       }
     },
     {
-      "chunk_id": "bcc70a1e-8231-424a-9db8-18f6f0e61982",
+      "chunk_id": "80774702-b96d-41c2-8a62-46e0a10572f9",
       "page_content": "Node\nComponents",
       "embedding": [
         0.015415469,
@@ -49382,7 +49382,7 @@
       }
     },
     {
-      "chunk_id": "7bf22a57-a37f-48de-8fd1-8cb6c19d9152",
+      "chunk_id": "315bb369-d082-4ea2-990e-7f3c6694941c",
       "page_content": "Node Components\nKubelet\nKube-proxy\nContainer runtime engine",
       "embedding": [
         -0.0105694,
@@ -52468,7 +52468,7 @@
       }
     },
     {
-      "chunk_id": "955512f6-83b1-427b-8281-fea567e2c2d4",
+      "chunk_id": "9607792a-42c9-430a-aa16-f1a6aea65a46",
       "page_content": "kubelet\nActs as the node agent responsible for managing pod lifecycle on its host.  Kubelet understands YAML container manifests that it can read from several  sources:\n\nFile path\nHTTP Endpoint\nEtcd watch acting on any changes\nHTTP Server mode accepting container manifests over a simple API.",
       "embedding": [
         -0.015673557,
@@ -55554,7 +55554,7 @@
       }
     },
     {
-      "chunk_id": "88121b92-7690-46cf-9a06-a63eb3dee1ab",
+      "chunk_id": "18ee3d12-d821-4a9c-8e84-81daffbddc72",
       "page_content": "kube-proxy\nManages the network rules on each node and performs connection  forwarding or load balancing for Kubernetes cluster services.\n\nAvailable Proxy Modes:\n\nUserspace\niptables\nipvs (alpha in 1.8)",
       "embedding": [
         -0.024111183,
@@ -58640,7 +58640,7 @@
       }
     },
     {
-      "chunk_id": "6a28e6e1-bf5d-4a80-bfa5-6ba7662d0648",
+      "chunk_id": "5c9e1310-3694-4a1c-b3ae-df3bf2246bfa",
       "page_content": "Container Runtime\nWith respect to Kubernetes, A container runtime is a CRI (Container Runtime Interface)  compatible application that executes and manages containers.\n\nContainerd (docker)\nCri-o\nRkt\nKata (formerly clear and hyper)\nVirtlet (VM CRI compatible runtime)",
       "embedding": [
         -0.0076647946,
@@ -61726,7 +61726,7 @@
       }
     },
     {
-      "chunk_id": "b02cb1eb-24d5-4f56-be1f-e1949794d737",
+      "chunk_id": "45a4dd07-cd4b-47fc-a1ff-94173c13e3e2",
       "page_content": "Additional Services\nKube-dns - Provides cluster wide DNS Services. Services are resolvable to\n<service>.<namespace>.svc.cluster.local.\nHeapster - Metrics Collector for kubernetes cluster, used by some resources  such as the Horizontal Pod Autoscaler. (required for kubedashboard metrics)\n\nKube-dashboard - A general purpose web based UI for kubernetes.",
       "embedding": [
         -0.01158286,
@@ -64812,7 +64812,7 @@
       }
     },
     {
-      "chunk_id": "a94f17e2-f175-465f-aa80-fc676d4f932f",
+      "chunk_id": "c36d1d0c-8560-4604-b457-26cc03c8d06a",
       "page_content": "Networking",
       "embedding": [
         -0.02037396,
@@ -67898,7 +67898,7 @@
       }
     },
     {
-      "chunk_id": "355417d3-9999-420d-b22a-225da7b3c8b4",
+      "chunk_id": "a27c3c53-10d1-4b57-ad90-7bf8291c68e9",
       "page_content": "Networking - Fundamental Rules\nAll Pods can communicate with all other Pods without NAT\nAll nodes can communicate with all Pods (and vice-versa) without NAT.\nThe IP that a Pod sees itself as is the same IP that others see it as.",
       "embedding": [
         -0.014667832,
@@ -70984,7 +70984,7 @@
       }
     },
     {
-      "chunk_id": "8dfb7056-ddc8-4423-a9ba-647135da6c96",
+      "chunk_id": "ec5ad0cc-b5e3-4195-a190-3aaaff521e37",
       "page_content": "Networking - Fundamentals Applied\nContainers in a pod exist within the same network namespace and share an  IP; allowing for intrapod communication over localhost.\nPods are given a cluster unique IP for the duration of its lifecycle, but the pods  themselves are fundamentally ephemeral.\n\nServices are given a persistent cluster unique IP that spans the Pods lifecycle.\nExternal Connectivity is generally handed by an integrated cloud provider or  other external entity (load balancer)",
       "embedding": [
         -0.021006728,
@@ -74070,7 +74070,7 @@
       }
     },
     {
-      "chunk_id": "53efb914-1bd9-4a90-8e8c-732439a15db0",
+      "chunk_id": "609903d5-a4df-40f8-a03b-e2451e4b0501",
       "page_content": "Networking - CNI\nNetworking within Kubernetes is plumbed via the Container Network  Interface (CNI), an interface between a container runtime and a network  implementation plugin.\n\nCompatible CNI Network Plugins:\nCalico\nCillium\nContiv\nContrail\nFlannel\nGCE\nkube-router\nMultus\nOpenVSwitch\nOVN\nRomana\nWeave",
       "embedding": [
         -0.024351696,
@@ -77156,7 +77156,7 @@
       }
     },
     {
-      "chunk_id": "2d63b15d-305e-4238-96e7-98c0c5650ae8",
+      "chunk_id": "ea7b8c25-f8bb-4efc-86c7-99f5319e1d11",
       "page_content": "Kubernetes\nConcepts",
       "embedding": [
         -0.011333445,
@@ -80242,7 +80242,7 @@
       }
     },
     {
-      "chunk_id": "7f051e44-8fdb-4e49-8563-94e298666954",
+      "chunk_id": "ef63c198-2a5a-4d93-8317-80599c6dda39",
       "page_content": "Kubernetes Concepts - Core\nCluster - A collection of hosts that aggregate their available resources including cpu, ram, disk,  and their devices into a usable pool.\n\nMaster - The master(s) represent a collection of components that make up the control plane of  Kubernetes. These components are responsible for all cluster decisions including both  scheduling and responding to cluster events.\n\nNode - A single host, physical or virtual capable of running pods. A node is managed by the  master(s), and at a minimum runs both kubelet and kube-proxy to be considered part of the  cluster.\n\nNamespace - A logical cluster or environment. Primary method of dividing a cluster or  scoping access.",
       "embedding": [
         -0.029582301,
@@ -83328,7 +83328,7 @@
       }
     },
     {
-      "chunk_id": "99875765-1fb3-4aef-b495-efa39241dfdd",
+      "chunk_id": "9b6bc313-d500-47dd-88bc-83b689f53302",
       "page_content": "Concepts - Core (cont.)\nLabel - Key-value pairs that are used to identify, describe and group together related sets of  objects. Labels have a strict syntax and available character set. *\n\nAnnotation - Key-value pairs that contain non-identifying information or metadata.  Annotations do not have the the syntax limitations as labels and can contain structured or  unstructured data.\n\nSelector - Selectors use labels to filter or select objects. Both equality-based (=, ==, !=) or  simple key-value matching selectors are supported.\n* https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/#syntax-and-character-set",
       "embedding": [
         -0.03531149,
@@ -86414,8 +86414,8 @@
       }
     },
     {
-      "chunk_id": "460edcb0-65b0-45d5-9006-5d42b98382a0",
-      "page_content": "Labels:\napp: nginx  tier: frontned\n\nAnnotations\ndescription: \u201cnginx frontend\u201d\n\nSelector:  app: nginx\ntier: frontend\nLabels, and Annotations,  and Selectors",
+      "chunk_id": "6bfff0df-d98a-4e76-8a0a-748473685b0b",
+      "page_content": "Labels:\napp: nginx  tier: frontned\n\nAnnotations\ndescription: “nginx frontend”\n\nSelector:  app: nginx\ntier: frontend\nLabels, and Annotations,  and Selectors",
       "embedding": [
         -0.029806027,
         -0.010908225,
@@ -89500,7 +89500,7 @@
       }
     },
     {
-      "chunk_id": "7210a6bc-d7e3-4674-bd2e-e45444abf8ad",
+      "chunk_id": "fb26d8cd-12b6-4f20-b76a-7bd92b6ee27d",
       "page_content": "Set-based selectors\nValid Operators:\nIn\nNotIn\nExists\nDoesNotExist\n\nSupported Objects with set-based selectors:\nJob\nDeployment\nReplicaSet\nDaemonSet\nPersistentVolumeClaims",
       "embedding": [
         -0.041108955,
@@ -92586,7 +92586,7 @@
       }
     },
     {
-      "chunk_id": "f2196d7d-d1bd-4a63-91db-0a11f169cae3",
+      "chunk_id": "9686cf9b-39cd-49e2-b0b1-f4dff4997aa7",
       "page_content": "Concepts\t- Workloads\nPod - A pod is the smallest unit of work or management resource within Kubernetes. It is  comprised of one or more containers that share their storage, network, and context  (namespace, cgroups etc).\n\nReplicationController - Method of managing pod replicas and their lifecycle. Their  scheduling, scaling, and deletion.\n\nReplicaSet - Next Generation ReplicationController. Supports set-based selectors.\nDeployment - A declarative method of managing stateless Pods and ReplicaSets. Provides  rollback functionality in addition to more granular update control mechanisms.",
       "embedding": [
         -0.02004405,
@@ -95672,8 +95672,8 @@
       }
     },
     {
-      "chunk_id": "993361df-4fe8-4a48-9a9d-df9f384e9723",
-      "page_content": "Deployment\nContains configuration  of how updates or  \u2018deployments\u2019 should be  managed in addition to  the pod template used to  generate the ReplicaSet.\nReplicaSet\nGenerated ReplicaSet  from Deployment spec.",
+      "chunk_id": "d4106680-77b3-4db5-b4e6-bc86b205d0d6",
+      "page_content": "Deployment\nContains configuration  of how updates or  ‘deployments’ should be  managed in addition to  the pod template used to  generate the ReplicaSet.\nReplicaSet\nGenerated ReplicaSet  from Deployment spec.",
       "embedding": [
         -0.028311081,
         0.011021169,
@@ -98758,7 +98758,7 @@
       }
     },
     {
-      "chunk_id": "ecc7aac0-3ebb-4be1-9274-655379547319",
+      "chunk_id": "cf6c6723-b9ac-479a-a857-91dd4e0de453",
       "page_content": "Concepts\t- Workloads (cont.)\nStatefulSet - A controller tailored to managing Pods that must persist or maintain state. Pod  identity including hostname, network, and storage will be persisted.\n\nDaemonSet - Ensures that all nodes matching certain criteria will run an instance of a  supplied Pod. Ideal for cluster wide services such as log forwarding, or health monitoring.",
       "embedding": [
         -0.018202012,
@@ -101844,8 +101844,8 @@
       }
     },
     {
-      "chunk_id": "bc1f861e-fb23-4c67-8da1-2ac0de8ed3df",
-      "page_content": "StatefulSet\nAttaches to \u2018headeless service\u2019 (not shown) nginx.\nPods given unique ordinal names using the pattern\n<statefulset name>-<ordinal index>.\nCreates independent persistent volumes based on  the \u2018volumeClaimTemplates\u2019.",
+      "chunk_id": "06bad7c2-64df-4e8d-95a0-33110a6541b2",
+      "page_content": "StatefulSet\nAttaches to ‘headeless service’ (not shown) nginx.\nPods given unique ordinal names using the pattern\n<statefulset name>-<ordinal index>.\nCreates independent persistent volumes based on  the ‘volumeClaimTemplates’.",
       "embedding": [
         -0.023904042,
         0.011981061,
@@ -104930,7 +104930,7 @@
       }
     },
     {
-      "chunk_id": "f49eb302-8615-4450-91a2-76c001af7956",
+      "chunk_id": "416a05ec-1ea5-4f5a-8894-ca1d220c0661",
       "page_content": "DaemonSet\nBypasses default scheduler\nSchedules a single instance on every host while  adhering to tolerances and taints.",
       "embedding": [
         -0.014448528,
@@ -108016,7 +108016,7 @@
       }
     },
     {
-      "chunk_id": "fd0581b1-b759-4461-be0f-307a28246125",
+      "chunk_id": "ea6804c0-459c-46d2-8a43-4dd160bf911f",
       "page_content": "Concepts\t- Workloads (cont.)\nJob - The job controller ensures one or more pods are executed and successfully terminates. It  will do this until it satisfies the completion and/or parallelism condition.\n\nCronJob - An extension of the Job Controller, it provides a method of executing jobs on a  cron-like schedule.",
       "embedding": [
         -0.005749127,
@@ -111102,7 +111102,7 @@
       }
     },
     {
-      "chunk_id": "dbe259e5-f97d-43bf-b7db-ce846ac78b59",
+      "chunk_id": "21a6e663-3d13-42e9-af38-4701e9728a32",
       "page_content": "Jobs\nNumber of pod executions can be controlled  via spec.completions\nJobs can be parallelized using spec.parallelism\nJobs and Pods are NOT automatically  cleaned up after a job has completed.",
       "embedding": [
         -0.009398267,
@@ -114188,7 +114188,7 @@
       }
     },
     {
-      "chunk_id": "ffd9e293-ee48-4920-930d-4ce10bcf7110",
+      "chunk_id": "4eff0a23-1811-4993-bc60-c0fc7d0bf104",
       "page_content": "CronJob\nAdds cron schedule to job template",
       "embedding": [
         -0.017591894,
@@ -117274,7 +117274,7 @@
       }
     },
     {
-      "chunk_id": "3d16171f-75ee-4799-b783-f582af6c7168",
+      "chunk_id": "9582bbd7-2049-45ec-a7c8-d357edf13eda",
       "page_content": "Concepts\t- Network\nService - Services provide a method of exposing and consuming L4 Pod network accessible  resources. They use label selectors to map groups of pods and ports to a cluster-unique virtual  IP.\n\nIngress - An ingress controller is the primary method of exposing a cluster service (usually  http) to the outside world. These are load balancers or routers that usually offer SSL  termination, name-based virtual hosting etc.",
       "embedding": [
         -0.032689754,
@@ -120360,8 +120360,8 @@
       }
     },
     {
-      "chunk_id": "03b37f6d-e415-470a-9ae4-4c05258da707",
-      "page_content": "Service\nActs as the unified method of accessing replicated pods.\nFour major Service Types:\nCluterIP - Exposes service on a strictly cluster-internal IP (default)\nNodePort - Service is exposed on each node\u2019s IP on a statically  defined port.\nLoadBalancer - Works in combination with a cloud provider to  expose a service outside the cluster on a static external IP.\nExternalName - used to references endpoints OUTSIDE the cluster  by providing a static internally referenced DNS name.",
+      "chunk_id": "8bd7c4c9-0f8f-44c9-b53f-2cf1835d4cf4",
+      "page_content": "Service\nActs as the unified method of accessing replicated pods.\nFour major Service Types:\nCluterIP - Exposes service on a strictly cluster-internal IP (default)\nNodePort - Service is exposed on each node’s IP on a statically  defined port.\nLoadBalancer - Works in combination with a cloud provider to  expose a service outside the cluster on a static external IP.\nExternalName - used to references endpoints OUTSIDE the cluster  by providing a static internally referenced DNS name.",
       "embedding": [
         -0.024960166,
         0.00049500633,
@@ -123446,7 +123446,7 @@
       }
     },
     {
-      "chunk_id": "8b4308dc-20f1-4678-a84b-ffa6bda5c77e",
+      "chunk_id": "312a69ca-effc-4568-af21-1b709f312676",
       "page_content": "Ingress Controller\nDeployed as a pod to one or more hosts\nIngress controllers are an external  controller with multiple options.\nNginx\nHAproxy\nContour\nTraefik\nSpecific features and controller specific  configuration is passed through  annotations.",
       "embedding": [
         -0.02133793,
@@ -126532,7 +126532,7 @@
       }
     },
     {
-      "chunk_id": "25e98def-4def-46af-a37b-fad98e4a8c26",
+      "chunk_id": "f72c13cb-c9f3-42f3-a7f3-3334de8936be",
       "page_content": "Concepts\t- Storage\nVolume - Storage that is tied to the Pod Lifecycle, consumable by one or more  containers within the pod.\n\nPersistentVolume - A PersistentVolume (PV) represents a storage resource. PVs are  commonly linked to a backing storage resource, NFS, GCEPersistentDisk, RBD etc. and are  provisioned ahead of time. Their lifecycle is handled independently from a pod.\n\nPersistentVolumeClaim - A PersistentVolumeClaim (PVC) is a request for storage that  satisfies a set of requirements instead of mapping to a storage resource directly. Commonly  used with dynamically provisioned storage.\n\nStorageClass - Storage classes are an abstraction on top of an external storage resource.  These will include a provisioner, provisioner configuration parameters as well as a PV  reclaimPolicy.",
       "embedding": [
         -0.022403149,
@@ -129618,7 +129618,7 @@
       }
     },
     {
-      "chunk_id": "e3c5bd00-fad3-48a1-ae1d-0e8b5a9d8b8f",
+      "chunk_id": "1626d83d-9b9b-41c1-8684-52b76194f250",
       "page_content": "Volumes",
       "embedding": [
         0.002117528,
@@ -132704,7 +132704,7 @@
       }
     },
     {
-      "chunk_id": "1c3aa9a6-1b2e-4579-908a-fa1b9ec57de0",
+      "chunk_id": "94f0b448-e44e-447b-9585-d685c1635878",
       "page_content": "Persistent Volumes\nPVs are a cluster-wide resource\nNot directly consumable by a Pod\nPV Parameters:\nCapacity\naccessModes\nReadOnlyMany (ROX)\nReadWriteOnce (RWO)\nReadWriteMany (RWX)\npersistentVolumeReclaimPolicy\nRetain\nRecycle\nDelete\nStorageClass",
       "embedding": [
         -0.029267,
@@ -135790,7 +135790,7 @@
       }
     },
     {
-      "chunk_id": "b1f6eac8-4e2f-4399-9d87-c5880be0bdb4",
+      "chunk_id": "484b4946-a5f6-47cf-bb43-6807c4ad8af7",
       "page_content": "Persistent Volume Claims\nPVCs are scoped to namespaces\nSupports accessModes like PVs\nUses resource request model similar to Pods\nClaims will consume storage from matching PVs  or StorageClasses based on storageClass and  selectors.",
       "embedding": [
         -0.03513543,
@@ -138876,7 +138876,7 @@
       }
     },
     {
-      "chunk_id": "44d27f43-d9d7-40be-a7b2-fff3bd633859",
+      "chunk_id": "ce074b77-e443-471c-a42b-2e452b815434",
       "page_content": "Storage Classes\nUses an external system defined by the  provisioner to dynamically consume and  allocate storage.\nStorage Class Fields\nProvisioner\nParameters\nreclaimPolicy",
       "embedding": [
         -0.013489939,
@@ -141962,7 +141962,7 @@
       }
     },
     {
-      "chunk_id": "76b2ee65-42d8-4cc6-a6b5-62a764d51d2d",
+      "chunk_id": "203c4077-508e-4be1-97f4-894159e27d0f",
       "page_content": "Concepts - Configuration\nConfigMap - Externalized data stored within kubernetes that can be referenced as a  commandline argument, environment variable, or injected as a file into a volume mount. Ideal  for separating containerized application from configuration.\n\nSecret - Functionally identical to ConfigMaps, but stored encoded as base64, and encrypted at  rest (if configured).",
       "embedding": [
         -0.023731915,
@@ -145048,7 +145048,7 @@
       }
     },
     {
-      "chunk_id": "62976fbc-ab90-4bc2-a7c8-3c52205f1fec",
+      "chunk_id": "bf365e7e-9edf-4ba4-b61c-70ac1f18cdfc",
       "page_content": "ConfigMaps and Secrets\nCan be used in Pod Config:\nInjected as a file\nPassed as an environment variable\nUsed as a container command (requires passing as env var)",
       "embedding": [
         -0.019148909,
@@ -148134,8 +148134,8 @@
       }
     },
     {
-      "chunk_id": "ad12947b-2569-4ae8-9fef-0d15245002c8",
-      "page_content": "Concepts - Auth and Identity (RBAC)\n[Cluster]Role - Roles contain rules that act as a set of permissions that apply verbs like \u201cget\u201d,  \u201clist\u201d, \u201cwatch\u201d etc over resources that are scoped to apiGroups. Roles are scoped to namespaces,  and ClusterRoles are applied cluster-wide.\n\n[Cluster]RoleBinding - Grant the permissions as defined in a [Cluster]Role to one or more  \u201csubjects\u201d which can be a user, group, or service account.\n\nServiceAccount- ServiceAccounts provide a consumable identity for pods or external  services that interact with the cluster directly and are scoped to namespaces.",
+      "chunk_id": "f5c38295-4f45-4a02-8fb2-29ad502568cf",
+      "page_content": "Concepts - Auth and Identity (RBAC)\n[Cluster]Role - Roles contain rules that act as a set of permissions that apply verbs like “get”,  “list”, “watch” etc over resources that are scoped to apiGroups. Roles are scoped to namespaces,  and ClusterRoles are applied cluster-wide.\n\n[Cluster]RoleBinding - Grant the permissions as defined in a [Cluster]Role to one or more  “subjects” which can be a user, group, or service account.\n\nServiceAccount- ServiceAccounts provide a consumable identity for pods or external  services that interact with the cluster directly and are scoped to namespaces.",
       "embedding": [
         -0.015208998,
         0.0009949503,
@@ -151220,8 +151220,8 @@
       }
     },
     {
-      "chunk_id": "92269c65-a1c1-4fd4-b907-8e1726f2c8de",
-      "page_content": "[Cluster]Role\nPermissions translate to url  path. With \u201c\u201d defaulting to core  group.\nResources act as items the role  should be granted access to.\nVerbs are the actions the role  can perform on the referenced  resources.",
+      "chunk_id": "c3fd8699-5a81-4dd7-a39e-149b4d02744e",
+      "page_content": "[Cluster]Role\nPermissions translate to url  path. With “” defaulting to core  group.\nResources act as items the role  should be granted access to.\nVerbs are the actions the role  can perform on the referenced  resources.",
       "embedding": [
         -0.011460718,
         6.260822e-05,
@@ -154306,7 +154306,7 @@
       }
     },
     {
-      "chunk_id": "05c20cab-d026-4752-bdaf-33b064a5c248",
+      "chunk_id": "b6fcb5c7-7d56-47bf-aed8-d614ed5d2c8c",
       "page_content": "[Cluster]RoleBinding\nCan reference multiple subjects\nSubjects can be of kind:\nUser\nGroup\nServiceAccount\nroleRef targets a single role only.",
       "embedding": [
         -0.025611775,
@@ -157392,7 +157392,7 @@
       }
     },
     {
-      "chunk_id": "daf8ce85-deae-45ed-9527-407810b8805b",
+      "chunk_id": "a1445de5-a9c8-4b04-b6b9-76d5ce4c4865",
       "page_content": "Behind\nThe Scenes",
       "embedding": [
         0.0009848468,
@@ -160478,7 +160478,7 @@
       }
     },
     {
-      "chunk_id": "adfcc070-41d3-476f-9a15-b07828589027",
+      "chunk_id": "7a4b029b-998f-4457-b9b3-ac740a3f2a28",
       "page_content": "Behind\nThe Scenes",
       "embedding": [
         0.0009848468,
@@ -163564,7 +163564,7 @@
       }
     },
     {
-      "chunk_id": "00f69a25-1d27-4605-98f9-f965089b4199",
+      "chunk_id": "f057ab63-ec51-4cbe-913b-637851a69897",
       "page_content": "Deployment From\nBeginning to End",
       "embedding": [
         -0.028338397,
@@ -166650,7 +166650,7 @@
       }
     },
     {
-      "chunk_id": "5a0a36cd-4984-41c4-a179-23f1b461aa30",
+      "chunk_id": "d9c7cd60-93e3-476d-abd1-1d54c3575c14",
       "page_content": "Kubectl\nKubectl performs client side  validation on manifest (linting).\nManifest is prepared and serialized  creating a JSON payload.",
       "embedding": [
         -0.028220834,
@@ -169736,7 +169736,7 @@
       }
     },
     {
-      "chunk_id": "f439cc43-4028-4fae-b155-333105013be9",
+      "chunk_id": "f6c56578-457a-442e-a1b3-46fef5125ac5",
       "page_content": "APIserver Request Loop\nKubectl authenticates to apiserver via x509, jwt,  http auth proxy, other plugins, or http-basic auth.\n\nAuthorization iterates over available AuthZ  sources: Node, ABAC, RBAC, or webhook.\n\nAdmissionControl checks resource quotas,  other security related checks etc.\n\nRequest is stored in etcd.\n\nInitializers are given opportunity to mutate request before the object is published.\n\nRequest is published on apiserver.",
       "embedding": [
         -0.023671342,
@@ -172822,7 +172822,7 @@
       }
     },
     {
-      "chunk_id": "883d2dbf-ed11-445d-92d5-6da695d0f668",
+      "chunk_id": "bcc33c8f-cbdf-4993-95b5-e049f4847f5c",
       "page_content": "Deployment Controller\nDeployment Controller is notified of the new  Deployment via callback.\n\nDeployment Controller evaluates cluster state and  reconciles the desired vs current state and forms a  request for the new ReplicaSet.\n\napiserver request loop evaluates Deployment  Controller request.\n\nReplicaSet is published.",
       "embedding": [
         -0.024889125,
@@ -175908,8 +175908,8 @@
       }
     },
     {
-      "chunk_id": "2b51907e-95a9-4098-9c28-72c61ec683af",
-      "page_content": "ReplicaSet Controller\nReplicaSet Controller is notified of the new ReplicaSet  via callback.\n\nReplicaSet Controller evaluates cluster state and  reconciles the desired vs current state and forms a request  for the desired amount of pods.\n\napiserver request loop evaluates ReplicaSet  Controller request.\n\nPods published, and enter \u2018Pending\u2019 phase.",
+      "chunk_id": "193c0fa8-1a65-4862-b50c-c6a0c64279db",
+      "page_content": "ReplicaSet Controller\nReplicaSet Controller is notified of the new ReplicaSet  via callback.\n\nReplicaSet Controller evaluates cluster state and  reconciles the desired vs current state and forms a request  for the desired amount of pods.\n\napiserver request loop evaluates ReplicaSet  Controller request.\n\nPods published, and enter ‘Pending’ phase.",
       "embedding": [
         -0.015852707,
         0.020019043,
@@ -178994,8 +178994,8 @@
       }
     },
     {
-      "chunk_id": "758be260-bf7d-470c-9c7a-86d02a303640",
-      "page_content": "Scheduler\nScheduler monitors published pods with no  \u2018NodeName\u2019 assigned.\n\nApplies scheduling rules and filters to find a  suitable node to host the Pod.\n\nScheduler creates a binding of Pod to Node and  POSTs to apiserver.\n\napiserver request loop evaluates POST request.\n\nPod status is updated with node binding and sets  status to \u2018PodScheduled\u2019.",
+      "chunk_id": "d6943fd1-5d51-4b9e-9044-89223fe3327c",
+      "page_content": "Scheduler\nScheduler monitors published pods with no  ‘NodeName’ assigned.\n\nApplies scheduling rules and filters to find a  suitable node to host the Pod.\n\nScheduler creates a binding of Pod to Node and  POSTs to apiserver.\n\napiserver request loop evaluates POST request.\n\nPod status is updated with node binding and sets  status to ‘PodScheduled’.",
       "embedding": [
         -0.015464603,
         0.022595037,
@@ -182080,8 +182080,8 @@
       }
     },
     {
-      "chunk_id": "1e76a5d3-5944-4447-9b57-1a0c815be05f",
-      "page_content": "Kubelet - PodSync\nThe kubelet daemon on every node polls the apiserver filtering  for pods matching its own \u2018NodeName\u2019; checking its current state  with the desired state published through the apiserver.\n\nKubelet will then move through a series of internal processes to  prepare the pod environment. This includes pulling secrets,  provisioning storage, applying AppArmor profiles and other various  scaffolding. During this period, it will asynchronously be POST\u2019ing  the \u2018PodStatus\u2019 to the apiserver through the standard apiserver  request loop.",
+      "chunk_id": "9ea27fc8-92d0-4215-a6af-22f951cbf486",
+      "page_content": "Kubelet - PodSync\nThe kubelet daemon on every node polls the apiserver filtering  for pods matching its own ‘NodeName’; checking its current state  with the desired state published through the apiserver.\n\nKubelet will then move through a series of internal processes to  prepare the pod environment. This includes pulling secrets,  provisioning storage, applying AppArmor profiles and other various  scaffolding. During this period, it will asynchronously be POST’ing  the ‘PodStatus’ to the apiserver through the standard apiserver  request loop.",
       "embedding": [
         -0.0027890415,
         0.029075626,
@@ -185166,8 +185166,8 @@
       }
     },
     {
-      "chunk_id": "e1d3b667-46c8-436e-b0af-c2541ae932cb",
-      "page_content": "Pause and Plumbing\nKubelet then provisions a \u2018pause\u2019 container via the  CRI (Container Runtime Interface). The pause container  acts as the parent container for the Pod.\n\nThe network is plumbed to the Pod via the CNI  (Container Network Interface), creating a veth pair  attached to the pause container and to a container  bridge (cbr0).\n\nIPAM handled by the CNI plugin assigns an IP to the  pause container.",
+      "chunk_id": "37627aec-bb99-43fb-b3f5-d52649774de5",
+      "page_content": "Pause and Plumbing\nKubelet then provisions a ‘pause’ container via the  CRI (Container Runtime Interface). The pause container  acts as the parent container for the Pod.\n\nThe network is plumbed to the Pod via the CNI  (Container Network Interface), creating a veth pair  attached to the pause container and to a container  bridge (cbr0).\n\nIPAM handled by the CNI plugin assigns an IP to the  pause container.",
       "embedding": [
         0.0004965031,
         0.028166264,
@@ -188252,7 +188252,7 @@
       }
     },
     {
-      "chunk_id": "293dda01-3857-4a1e-bc7c-9a0822a92e8a",
+      "chunk_id": "fbaf958c-c97c-43da-a466-7635cf0e4ef3",
       "page_content": "Kublet - Create Containers\nKubelet pulls the container Images.\n\nKubelet first creates and starts any init containers.\n\nOnce the optional init containers complete, the  primary pod containers are started.",
       "embedding": [
         -0.006270964,
@@ -191338,7 +191338,7 @@
       }
     },
     {
-      "chunk_id": "b94852a9-ed0d-4fd1-ac3c-ef2b28ef704b",
+      "chunk_id": "fc9f7157-eccb-4648-8a67-9727eee533d7",
       "page_content": "Pod Status\nIf there are any liveless/readiness probes, these are executed before the  PodStatus is updated.\n\nIf all complete successfully, PodStatus is set to ready and the container  has started successfully.\nThe Pod is Deployed!",
       "embedding": [
         -0.022663347,
@@ -194424,7 +194424,7 @@
       }
     },
     {
-      "chunk_id": "6180140f-eb3b-40a0-bfaf-f103291ac96a",
+      "chunk_id": "8a3caa2a-75ad-4c96-af81-5e0ff4f26481",
       "page_content": "Questions?",
       "embedding": [
         -0.001706901,

@@ -1,0 +1,65 @@
+{
+  "started_at": "2026-10-05T18:23:39.490519+00:00",
+  "completed_at": "2026-10-05T18:24:13.902897+00:00",
+  "source_directory": "C:\\Users\\DELL\\Desktop\\rag-production-grade\\DATA\\true_data",
+  "total_files": 6,
+  "successful": 2,
+  "failed": 3,
+  "skipped": 0,
+  "total_chunks": 71,
+  "total_processing_time_sec": 34.412378,
+  "data_directory": "DATA",
+  "qdrant_collection": "rag-collection",
+  "files": [
+    {
+      "file_name": "architecture.pptx",
+      "source_path": "C:\\Users\\DELL\\Desktop\\rag-production-grade\\DATA\\true_data\\architecture.pptx",
+      "file_size_kb": 2736.1416015625,
+      "status": "success",
+      "chunks_created": 64,
+      "error_message": null,
+      "processing_time_sec": 23.563484,
+      "local_path": "DATA\\embeddings\\architecture.embeddings.json"
+    },
+    {
+      "file_name": "cronjobs.docx",
+      "source_path": "C:\\Users\\DELL\\Desktop\\rag-production-grade\\DATA\\true_data\\cronjobs.docx",
+      "file_size_kb": 64.2255859375,
+      "status": "error",
+      "chunks_created": null,
+      "error_message": "GoogleGenerativeAIError: Error embedding content (RESOURCE_EXHAUSTED): 429 RESOURCE_EXHAUSTED. {'error': {'code': 429, 'message': 'You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/rate-limit. \\n* Quota exceeded for metric: generativelanguage.googleapis.com/embed_content_free_tier_requests, limit: 100, model: gemini-embedding-1.0\\nPlease retry in 51.274990018s.', 'status': 'RESOURCE_EXHAUSTED', 'details': [{'@type': 'type.googleapis.com/google.rpc.Help', 'links': [{'description': 'Learn more about Gemini API quotas', 'url': 'https://ai.google.dev/gemini-api/docs/rate-limits'}]}, {'@type': 'type.googleapis.com/google.rpc.QuotaFailure', 'violations': [{'quotaMetric': 'generativelanguage.googleapis.com/embed_content_free_tier_requests', 'quotaId': 'EmbedContentRequestsPerMinutePerUserPerProjectPerModel-FreeTier', 'quotaDimensions': {'location': 'global', 'model': 'gemini-embedding-1.0'}, 'quotaValue': '100'}]}, {'@type': 'type.googleapis.com/google.rpc.RetryInfo', 'retryDelay': '51s'}]}}",
+      "processing_time_sec": 5.793793,
+      "local_path": null
+    },
+    {
+      "file_name": "job_management.html",
+      "source_path": "C:\\Users\\DELL\\Desktop\\rag-production-grade\\DATA\\true_data\\job_management.html",
+      "file_size_kb": 14.3349609375,
+      "status": "error",
+      "chunks_created": null,
+      "error_message": "GoogleGenerativeAIError: Error embedding content (RESOURCE_EXHAUSTED): 429 RESOURCE_EXHAUSTED. {'error': {'code': 429, 'message': 'You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/rate-limit. \\n* Quota exceeded for metric: generativelanguage.googleapis.com/embed_content_free_tier_requests, limit: 100, model: gemini-embedding-1.0\\nPlease retry in 50.586806084s.', 'status': 'RESOURCE_EXHAUSTED', 'details': [{'@type': 'type.googleapis.com/google.rpc.Help', 'links': [{'description': 'Learn more about Gemini API quotas', 'url': 'https://ai.google.dev/gemini-api/docs/rate-limits'}]}, {'@type': 'type.googleapis.com/google.rpc.QuotaFailure', 'violations': [{'quotaMetric': 'generativelanguage.googleapis.com/embed_content_free_tier_requests', 'quotaId': 'EmbedContentRequestsPerMinutePerUserPerProjectPerModel-FreeTier', 'quotaDimensions': {'location': 'global', 'model': 'gemini-embedding-1.0'}, 'quotaValue': '100'}]}, {'@type': 'type.googleapis.com/google.rpc.RetryInfo', 'retryDelay': '50s'}]}}",
+      "processing_time_sec": 0.692008,
+      "local_path": null
+    },
+    {
+      "file_name": "monitor_job.docx",
+      "source_path": "C:\\Users\\DELL\\Desktop\\rag-production-grade\\DATA\\true_data\\monitor_job.docx",
+      "file_size_kb": 25.3369140625,
+      "status": "error",
+      "chunks_created": null,
+      "error_message": "GoogleGenerativeAIError: Error embedding content (RESOURCE_EXHAUSTED): 429 RESOURCE_EXHAUSTED. {'error': {'code': 429, 'message': 'You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/rate-limit. \\n* Quota exceeded for metric: generativelanguage.googleapis.com/embed_content_free_tier_requests, limit: 100, model: gemini-embedding-1.0\\nPlease retry in 49.915132672s.', 'status': 'RESOURCE_EXHAUSTED', 'details': [{'@type': 'type.googleapis.com/google.rpc.Help', 'links': [{'description': 'Learn more about Gemini API quotas', 'url': 'https://ai.google.dev/gemini-api/docs/rate-limits'}]}, {'@type': 'type.googleapis.com/google.rpc.QuotaFailure', 'violations': [{'quotaMetric': 'generativelanguage.googleapis.com/embed_content_free_tier_requests', 'quotaId': 'EmbedContentRequestsPerMinutePerUserPerProjectPerModel-FreeTier', 'quotaDimensions': {'location': 'global', 'model': 'gemini-embedding-1.0'}, 'quotaValue': '100'}]}, {'@type': 'type.googleapis.com/google.rpc.RetryInfo', 'retryDelay': '49s'}]}}",
+      "processing_time_sec": 0.666041,
+      "local_path": null
+    },
+    {
+      "file_name": "parallel_work_queue.txt",
+      "source_path": "C:\\Users\\DELL\\Desktop\\rag-production-grade\\DATA\\true_data\\parallel_work_queue.txt",
+      "file_size_kb": 5.01171875,
+      "status": "success",
+      "chunks_created": 7,
+      "error_message": null,
+      "processing_time_sec": 3.68907,
+      "local_path": "DATA\\embeddings\\parallel_work_queue.embeddings.json"
+    }
+  ]
+}
