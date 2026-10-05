@@ -1,11 +1,9 @@
 import logfire
 
-from app.observability import configure_logfire
 from app.gateway import portkey_client, extract_cache_status
 from app.agents.state import AgentState
 
 
-configure_logfire()
 def generate_node(state: AgentState):
     """
     Synthesizes a response using both Documentation Context AND Conversation History.

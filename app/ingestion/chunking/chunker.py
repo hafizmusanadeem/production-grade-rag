@@ -3,12 +3,10 @@ from typing import Any
 
 import logfire
 from langchain_text_splitters import RecursiveCharacterTextSplitter
-from app.observability import configure_logfire
 from app.config import settings
 from app.ingestion.loaders.base import LoadedDocument
 
 
-configure_logfire()
 @dataclass
 class Chunk:
     page_content: str

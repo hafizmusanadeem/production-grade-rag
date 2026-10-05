@@ -20,7 +20,6 @@ import logfire
 
 from app.config import settings, validate_env_vars
 from app.ingestion.processor import IngestionProcessor
-from app.observability import configure_logfire
 
 
 @dataclass
@@ -546,7 +545,6 @@ def build_argument_parser() -> argparse.ArgumentParser:
 def main() -> int:
     """CLI entry point."""
 
-    configure_logfire()
 
     try:
         validate_env_vars()

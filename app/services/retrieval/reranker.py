@@ -1,46 +1,61 @@
 from __future__ import annotations
 
-import time
+from dataclasses import dataclass, field
+from time import perf_counter
+from typing import TYPE_CHECKING, Any
+
 import logfire
-from typing import TYPE_CHECKING
+from app.services.retrieval.qdrant_service import RetrievedChunk
 
 if TYPE_CHECKING:
-    from flashrank import Ranker, RerankRequest
+    from flashrank import Ranker
 
 
 ranker = None
 
-def get_ranker() -> Ranker:
-    """
-    Initializes the FlashRank engine lazily.
-    FlashRank uses a local ONNX model (ms-marco-MiniLM-L-6-v2) for ultra-fast reranking.
-    """
-    global ranker
-    if ranker is None:
 
+@dataclass
+class RerankedChunk:
+    chunk_id: str
+    page_content: str
+    original_score: float
+    rerank_score: float
+    metadata: dict[str, Any] = field(default_factory=dict)
+
+
+def get_ranker() -> Ranker:
+    """Initialize FlashRank lazily and reuse the loaded model."""
+    global ranker
+
+    if ranker is None:
         from flashrank import Ranker
-        logfire.info("Initializing FlashRank Model (TinyBert) Locally")
+
+        logfire.info("Initializing FlashRank model")
+
         try:
             ranker = Ranker(cache_dir="/tmp/flashrank")
         except Exception:
             ranker = Ranker()
+
     return ranker
 
-def rerank_documents(query: str, documents: list[str], top_n: int = 5) -> list[str]:
-    """
-    Refines retrieval results by re-scoring documents against the query semantically.
 
-    Why FlashRank?
-    Standard vector search (Cosine Similarity) is fast but mathematically "fuzzy."
-    FlashRank uses a Cross-Encoder approach which is much more precise but usually slow.
-    FlashRank solves this by using highly optimized, quantized ONNX models locally.
-    """
-
+def rerank_documents(
+    query: str,
+    documents: list[RetrievedChunk],
+    top_n: int = 5,
+) -> list[RerankedChunk]:
+    """Rerank retrieved chunks using FlashRank."""
     if not documents:
         return []
 
-    start_time = time.time()
-    logfire.info(f" [Reranker] Sending {len(documents)} docs to FlashRank Cross-Encoder ")
+    start_time = perf_counter()
+
+    logfire.info(
+        "Sending documents to FlashRank",
+        document_count=len(documents),
+        top_n=top_n,
+    )
 
     try:
         from flashrank import RerankRequest
@@ -48,23 +63,51 @@ def rerank_documents(query: str, documents: list[str], top_n: int = 5) -> list[s
         ranker_instance = get_ranker()
 
         passages = [
-            {"id": i, "text": doc}
-            for i, doc in enumerate(documents)
+            {
+                "id": index,
+                "text": document.page_content,
+            }
+            for index, document in enumerate(documents)
         ]
 
-        request = RerankRequest(query=query, passages=passages)
+        request = RerankRequest(
+            query=query,
+            passages=passages,
+        )
+
         results = ranker_instance.rerank(request)
 
-        reranked_docs = []
-        for res in results[:top_n]:
-            reranked_docs.append(res['text'])
+        reranked_documents = []
 
-        duration = time.time() - start_time
-        top_score = results[0]["score"] if results else "N/A"
-        logfire.info(f" [Reranker] Done in {duration:.2f}s. Top semantic score: {top_score}")
+        for result in results[:top_n]:
+            original_document = documents[result["id"]]
 
-        return reranked_docs
+            reranked_documents.append(
+                RerankedChunk(
+                    chunk_id=original_document.chunk_id,
+                    page_content=original_document.page_content,
+                    original_score=original_document.score,
+                    rerank_score=result["score"],
+                    metadata=original_document.metadata,
+                )
+            )
 
-    except Exception as e:
-        logfire.error(f" [Reranker] Semantic Reranking Failed: {e}")
-        return documents[:top_n]
+        duration = perf_counter() - start_time
+
+        logfire.info(
+            "FlashRank reranking completed",
+            document_count=len(documents),
+            result_count=len(reranked_documents),
+            duration_seconds=duration,
+            top_score=(
+                results[0]["score"]
+                if results
+                else None
+            ),
+        )
+
+        return reranked_documents
+
+    except Exception:
+        logfire.exception("FlashRank reranking failed")
+        raise

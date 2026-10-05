@@ -1,12 +1,10 @@
 import logfire
 
-from app.observability import configure_logfire
 from app.agents.state import AgentState
 from app.services.retrieval.qdrant_service import search_qdrant
 from app.services.retrieval.reranker import rerank_documents
 
 
-configure_logfire()
 def retrieve_node(state: AgentState):
     """
     Performs vector search and semantic reranking for technical queries.

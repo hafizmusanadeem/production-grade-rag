@@ -5,12 +5,11 @@ from uuid import uuid4
 
 import logfire
 from langchain_google_genai import GoogleGenerativeAIEmbeddings
+from functools import lru_cache
 
 from app.config import settings
-from app.observability import configure_logfire
 
 
-configure_logfire()
 if TYPE_CHECKING:
     from app.ingestion.chunking.chunker import Chunk
 
@@ -22,7 +21,7 @@ class EmbeddedChunk:
     embedding: list[float]
     metadata: dict[str, Any] = field(default_factory=dict)
 
-
+@lru_cache(maxsize=1)
 def _build_embeddings_client() -> GoogleGenerativeAIEmbeddings:
     if not settings.GEMINI_API_KEY:
         raise ValueError("GEMINI_API_KEY is required to generate embeddings")

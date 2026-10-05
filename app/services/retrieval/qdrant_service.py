@@ -13,12 +13,8 @@ from qdrant_client import QdrantClient
 from qdrant_client.http import models as qmodels
 
 from app.config import settings, validate_env_vars
-from app.observability import configure_logfire
 from app.services.retrieval.embeddings import EmbeddedChunk, embed_query
 
-
-
-configure_logfire()
 
 # ---------------------------------------------------------------------------
 # Data models
