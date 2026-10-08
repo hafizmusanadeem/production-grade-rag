@@ -1,0 +1,884 @@
+[
+  {
+    "id": "k001",
+    "query": "Which restart policies can a Kubernetes Job Pod use, and which one is not allowed?",
+    "ideal_answer": "Jobs have strict requirements for Pod restart policies. OnFailure is allowed: the kubelet restarts the container within the same Pod if it crashes. Never is allowed: the entire Pod is marked as failed and the Job controller creates a new Pod. Always is not allowed, because it would prevent the Pod from ever completing.",
+    "source": "cronjobs.docx"
+  },
+  {
+    "id": "k002",
+    "query": "What is the difference between Indexed and NonIndexed completion modes?",
+    "ideal_answer": "NonIndexed is the default completion mode, where all Pods are identical. In Indexed mode (completionMode: Indexed), each Pod gets a unique completion index. The Pod can read this index from the JOB_COMPLETION_INDEX environment variable and use it to process a specific slice of the data. In the examples, both modes use completions: 3 and parallelism: 2.",
+    "source": "cronjobs.docx"
+  },
+  {
+    "id": "k003",
+    "query": "How is the database-backup CronJob configured? Include its schedule, timezone, retries, timeout, and job history.",
+    "ideal_answer": "The database-backup CronJob in the production namespace uses the schedule \"0 2 * * *\" (daily at 2 AM) with timeZone set to \"America/New_York\". Its Job template runs a postgres:13-alpine container that uses pg_dump to write a timestamped .sql file to a /backup volume backed by the backup-pvc PersistentVolumeClaim. It uses restartPolicy OnFailure, backoffLimit 3 and activeDeadlineSeconds 3600 (a 1 hour timeout). It keeps successfulJobsHistoryLimit 3 and failedJobsHistoryLimit 5, uses concurrencyPolicy Forbid, and sets startingDeadlineSeconds to 300.",
+    "source": "cronjobs.docx"
+  },
+  {
+    "id": "k004",
+    "query": "My CronJob exists but no Jobs are being created. What should I check and what are the common causes?",
+    "ideal_answer": "The symptom is that the CronJob exists but no Jobs are created. The diagnostic steps are: run `kubectl describe cronjob <cronjob-name>` to check its status, verify the schedule syntax (for example with online cron expression testers), and check the controller manager logs with `kubectl logs -n kube-system deployment/kube-controller-manager`. There are two common issues. The first is an invalid cron expression, such as \"60 * * * *\", which is invalid because the minute must be 0-59. The fix is a valid expression like \"0 * * * *\" (every hour at minute 0). The second is a timezone problem: \"0 9 * * *\" runs at 9 AM in the cluster timezone. The fix is to specify timeZone: \"America/New_York\" so it runs at 9 AM Eastern Time.",
+    "source": "cronjobs.docx"
+  },
+  {
+    "id": "k005",
+    "query": "What security settings are recommended for hardening a Kubernetes Job?",
+    "ideal_answer": "At the Pod level, the securityContext sets runAsNonRoot: true, runAsUser: 1000, runAsGroup: 3000, fsGroup: 2000, and a seccompProfile of type RuntimeDefault. At the container level (the secure-job example), it sets allowPrivilegeEscalation: false, readOnlyRootFilesystem: true, drops ALL capabilities, and also sets runAsNonRoot: true and runAsUser: 1000.",
+    "source": "cronjobs.docx"
+  },
+  {
+    "id": "k006",
+    "query": "What are Kubernetes Jobs and CronJobs used for, and how are they different from Deployments and StatefulSets?",
+    "ideal_answer": "Jobs and CronJobs are resources designed specifically for task-oriented workloads that run to completion, such as one-time tasks, batch jobs, or scheduled operations. Unlike long-running services managed by Deployments or StatefulSets, these finite workloads require a different approach.",
+    "source": "cronjobs.docx"
+  },
+  {
+    "id": "k007",
+    "query": "What is a Kubernetes Job?",
+    "ideal_answer": "A Kubernetes Job is a resource designed to run finite workloads that execute a task to completion. Unlike Pods created via Deployments, which run indefinitely, a Job ensures that its associated Pods complete their task and then exit successfully.",
+    "source": "cronjobs.docx"
+  },
+  {
+    "id": "k008",
+    "query": "Which API group is a Job in, and can you change its Pod template after the Job is created?",
+    "ideal_answer": "A Job belongs to the batch/v1 API group, which is stable. The Pod template cannot be modified after the Job is created. Jobs are immutable by design for consistency.",
+    "source": "cronjobs.docx"
+  },
+  {
+    "id": "k009",
+    "query": "Can you walk me through the basic data-processor Job manifest example?",
+    "ideal_answer": "The manifest is a batch/v1 Job named data-processor in the batch-jobs namespace. It has one container named processor, using the image mcr.microsoft.com/powershell:7.2-alpine-3.13. It runs pwsh -Command with a script that writes 'Starting data processing at' the current date, sleeps for 30 seconds, and then writes 'Processing completed at' the current date. The resources are requests of cpu 500m and memory 200Mi, and limits of cpu 600m and memory 300Mi. The restartPolicy is Never and backoffLimit is 3.",
+    "source": "cronjobs.docx"
+  },
+  {
+    "id": "k010",
+    "query": "What do the completions and parallelism fields do in a Job?",
+    "ideal_answer": "Two critical fields control how Jobs execute. completions specifies the number of Pods that must successfully complete; for example, completions: 5 means the Job completes after 5 successful Pod completions. parallelism controls the maximum number of concurrent Pods; for example, parallelism: 3 means a maximum of 3 Pods run simultaneously.",
+    "source": "cronjobs.docx"
+  },
+  {
+    "id": "k011",
+    "query": "What is a CronJob in Kubernetes?",
+    "ideal_answer": "A CronJob is a thin wrapper around Jobs that enables scheduling. It creates Job objects automatically based on a defined schedule using the familiar cron format.",
+    "source": "cronjobs.docx"
+  },
+  {
+    "id": "k012",
+    "query": "What are the five fields in a cron schedule, and what values can each field use?",
+    "ideal_answer": "The schedule field uses the standard cron format with five fields, in order: minute (0 - 59), hour (0 - 23), day of the month (1 - 31), month (1 - 12), and day of the week (0 - 6, Sunday to Saturday).",
+    "source": "cronjobs.docx"
+  },
+  {
+    "id": "k013",
+    "query": "What are some common CronJob schedule expression examples?",
+    "ideal_answer": "\"* * * * *\" runs every minute. \"0 * * * *\" runs every hour at minute 0. \"30 2 * * *\" runs daily at 2:30 AM. \"0 9 * * 1\" runs every Monday at 9:00 AM. \"*/15 * * * *\" runs every 15 minutes.",
+    "source": "cronjobs.docx"
+  },
+  {
+    "id": "k014",
+    "query": "Which shortcut schedules, such as @daily, can CronJobs use, and what do they mean?",
+    "ideal_answer": "@hourly runs every hour. @daily runs every day at midnight. @weekly runs every Sunday at midnight. @monthly runs on the first day of each month at midnight. @yearly runs on January 1st at midnight.",
+    "source": "cronjobs.docx"
+  },
+  {
+    "id": "k015",
+    "query": "How is the daily ETL CronJob for customer data configured?",
+    "ideal_answer": "The scenario is a daily ETL job processing customer data. The CronJob is named etl-customer-data and its schedule is \"0 1 * * *\" (daily at 1 AM). The container etl-processor uses the image my-company/etl-tool:v2.1.0 and runs python etl_pipeline.py. It sets the env var PROCESSING_DATE to \"$(date -d 'yesterday' +%Y-%m-%d)\" and BATCH_SIZE to \"1000\". Resources are requests of cpu 1000m and memory 2Gi, and limits of cpu 2000m and memory 4Gi. The restartPolicy is OnFailure, backoffLimit is 2, successfulJobsHistoryLimit is 7, and failedJobsHistoryLimit is 3.",
+    "source": "cronjobs.docx"
+  },
+  {
+    "id": "k016",
+    "query": "What does the weekly database maintenance CronJob do and when does it run?",
+    "ideal_answer": "The scenario is weekly database cleanup and optimization. The CronJob db-maintenance has the schedule \"0 3 * * 0\" (Sundays at 3 AM) and uses the postgres:13-alpine image. Its script cleans up old logs by deleting from application_logs rows where created_at is older than 30 days, rebuilds indexes with REINDEX DATABASE $DB_NAME, updates statistics with ANALYZE, and then echoes 'Maintenance completed'. It loads environment variables from the secret db-connection-secret via envFrom. The restartPolicy is OnFailure and activeDeadlineSeconds is 7200 (2 hours max).",
+    "source": "cronjobs.docx"
+  },
+  {
+    "id": "k017",
+    "query": "How is the machine learning model training CronJob set up, including GPU and volumes?",
+    "ideal_answer": "The scenario is periodic model retraining with new data. The CronJob ml-model-training has the schedule \"0 4 * * 1\" (Mondays at 4 AM). The container model-trainer uses the image tensorflow/tensorflow:2.8.0-gpu and runs python train_model.py. Resource requests are nvidia.com/gpu 1, cpu 4000m and memory 8Gi. Limits are nvidia.com/gpu 1, cpu 8000m and memory 16Gi. It mounts the volume training-data at /data, backed by the PVC training-data-pvc, and the volume model-output at /models, backed by the PVC model-storage-pvc. The restartPolicy is Never, backoffLimit is 1, and concurrencyPolicy is Forbid.",
+    "source": "cronjobs.docx"
+  },
+  {
+    "id": "k018",
+    "query": "What Prometheus queries does the guide suggest for tracking Job success, duration, and failures?",
+    "ideal_answer": "Job success rate: rate(kube_job_status_succeeded[5m]) / rate(kube_job_status_completed[5m]). Job duration (average): avg(kube_job_status_completion_time - kube_job_status_start_time). Failed jobs (count): increase(kube_job_status_failed[1h]).",
+    "source": "cronjobs.docx"
+  },
+  {
+    "id": "k019",
+    "query": "What logging practice does the guide recommend for Job containers?",
+    "ideal_answer": "The guide recommends implementing structured logging in your job containers. Its Python example defines a StructuredLogger class that takes a job_name and has a log method. Each log entry is JSON containing timestamp (UTC ISO format), job_name, level, message, and any extra keyword arguments. Usage: logger = StructuredLogger(\"data-processor\"), then logger.log(\"INFO\", \"Processing started\", batch_size=1000) and logger.log(\"ERROR\", \"Processing failed\", error_code=\"DB_CONNECTION_ERROR\").",
+    "source": "cronjobs.docx"
+  },
+  {
+    "id": "k020",
+    "query": "What alerts should I create for failed Jobs and for CronJobs that stop running?",
+    "ideal_answer": "The guide defines a rule group named kubernetes-jobs with two alerts. JobFailed uses the expression kube_job_status_failed > 0, with for: 0m and severity warning. Its summary is 'Job {{ $labels.job_name }} failed' and its description says the job in the namespace has failed. CronJobMissing uses the expression (time() - kube_cronjob_status_last_schedule_time) > 3600 and kube_cronjob_spec_suspend == 0, with for: 5m and severity critical. Its summary is that the CronJob hasn't run in over an hour.",
+    "source": "cronjobs.docx"
+  },
+  {
+    "id": "k021",
+    "query": "How should I set up RBAC for a Job runner with the least privilege?",
+    "ideal_answer": "The example Role job-runner in the batch-jobs namespace grants verbs get and list on secrets and configmaps, and verbs get, list and watch on pods. A RoleBinding named job-runner-binding in the batch-jobs namespace binds the ServiceAccount job-service-account (namespace batch-jobs) to the Role job-runner.",
+    "source": "cronjobs.docx"
+  },
+  {
+    "id": "k022",
+    "query": "How does the guide recommend managing secrets for jobs?",
+    "ideal_answer": "It recommends using external secret management systems. The example has a SecretStore named vault-backend using the Vault provider with server [https://vault.company.com](https://vault.company.com), path secret, version v2, and Kubernetes auth with mountPath kubernetes and role job-runner. An ExternalSecret named job-secrets has refreshInterval 1h, references the vault-backend SecretStore, and targets a secret named job-secrets with creationPolicy Owner. It maps the secretKey database-password to the remoteRef key database/config, property password.",
+    "source": "cronjobs.docx"
+  },
+  {
+    "id": "k023",
+    "query": "How can I restrict a Job's network access with a NetworkPolicy?",
+    "ideal_answer": "The example NetworkPolicy job-network-policy in the batch-jobs namespace selects Pods with the label app: batch-job and sets policyTypes to Egress. It allows egress to namespaces labeled name: database on TCP port 5432. It also has an egress rule with 'to: []' on UDP port 53, commented as allowing DNS.",
+    "source": "cronjobs.docx"
+  },
+  {
+    "id": "k024",
+    "query": "My Job is stuck in Pending and no Pods are running. What are the causes and how do I diagnose it?",
+    "ideal_answer": "The symptom is that the Job is created but no Pods are running. Common causes are insufficient cluster resources, node selector constraints, and pod security policies blocking creation. Diagnostic commands are: kubectl describe job <job-name>; kubectl get events --sort-by=.metadata.creationTimestamp; kubectl top nodes; and kubectl describe nodes. The example solution is to add resource requests to help the scheduler: requests of cpu 100m and memory 128Mi, and limits of cpu 500m and memory 512Mi.",
+    "source": "cronjobs.docx"
+  },
+  {
+    "id": "k025",
+    "query": "My Jobs are getting OOMKilled or CPU-throttled. How do I diagnose and fix that?",
+    "ideal_answer": "The symptoms are Pods getting OOMKilled or CPU throttled. Diagnostic commands are: kubectl top pod <pod-name>; kubectl describe pod <pod-name> (to check pod events for OOMKilled); and kubectl describe quota -n <namespace> (to check resource quotas). One solution is to increase resource limits, for example requests of cpu 1000m and memory 2Gi, and limits of cpu 2000m and memory 4Gi. The other is to use vertical pod autoscaling for right-sizing, with a VerticalPodAutoscaler named job-vpa targeting the Job my-job with updateMode \"Initial\" (only set resources for new pods).",
+    "source": "cronjobs.docx"
+  },
+  {
+    "id": "k026",
+    "query": "What can I do when Jobs are taking longer than expected?",
+    "ideal_answer": "The guide gives three solutions. First, set an active deadline such as activeDeadlineSeconds: 3600, which kills the job after 1 hour. Second, increase parallelism for parallelizable workloads, for example parallelism: 5 with completions: 10. Third, use faster nodes with node affinity: requiredDuringSchedulingIgnoredDuringExecution with a matchExpression on key node-type, operator In, values [\"high-performance\"].",
+    "source": "cronjobs.docx"
+  },
+  {
+    "id": "k027",
+    "query": "How can I use VPA to get resource-sizing recommendations for Jobs?",
+    "ideal_answer": "Install VPA if not present, with kubectl apply -f of the vpa-release-0.13.0.yaml release from the kubernetes/autoscaler GitHub releases. Then create a VerticalPodAutoscaler named job-sizing-analysis with targetRef apiVersion batch/v1, kind Job, name my-analysis-job, and updatePolicy updateMode \"Off\" (just provide recommendations). Check the recommendations with kubectl describe vpa job-sizing-analysis.",
+    "source": "cronjobs.docx"
+  },
+  {
+    "id": "k028",
+    "query": "How does the guide build a smaller, more efficient container image for Jobs?",
+    "ideal_answer": "It uses a multi-stage build for smaller images. The builder stage uses golang:1.19-alpine, sets WORKDIR /app, copies go.mod and go.sum, runs go mod download, copies the source, and builds with CGO_ENABLED=0 GOOS=linux go build -o job-runner. The final stage uses alpine:3.16, runs apk --no-cache add ca-certificates, sets WORKDIR /root/, copies job-runner from the builder, sets USER 1000:1000, and uses CMD [\"./job-runner\"].",
+    "source": "cronjobs.docx"
+  },
+  {
+    "id": "k029",
+    "query": "How can I split work across parallel Indexed Job Pods?",
+    "ideal_answer": "The Job parallel-processing uses completions: 10, parallelism: 3 and completionMode: Indexed. Each worker computes START_INDEX = JOB_COMPLETION_INDEX * 1000 and END_INDEX = (JOB_COMPLETION_INDEX + 1) * 1000 - 1, then runs ./process-data --start=$START_INDEX --end=$END_INDEX.",
+    "source": "cronjobs.docx"
+  },
+  {
+    "id": "k030",
+    "query": "What storage setup does the guide recommend for I/O-heavy Jobs and for parallel Jobs that share storage?",
+    "ideal_answer": "Use appropriate storage classes. For I/O-intensive jobs, the PVC job-fast-storage uses accessMode ReadWriteOnce, storageClassName ssd-fast (use SSD) and requests 100Gi. For shared storage across parallel jobs, the PVC shared-job-storage uses accessMode ReadWriteMany, storageClassName nfs-shared and requests 1Ti.",
+    "source": "cronjobs.docx"
+  },
+  {
+    "id": "k031",
+    "query": "What does the guide's example of making a Job safe to run more than once look like?",
+    "ideal_answer": "The Python function process_data_idempotently creates an MD5 checksum of the input data. It checks whether the output already exists with a metadata file containing the same input hash, and if so prints 'Output already exists for this input, skipping...' and returns. Otherwise it runs the expensive processing, writes the result to a temporary .tmp file, and uses os.rename to move it to the output path. It then writes the input hash to the metadata file.",
+    "source": "cronjobs.docx"
+  },
+  {
+    "id": "k032",
+    "query": "How does the Job retry calls to an external service with increasing delays?",
+    "ideal_answer": "The api-consumer container runs a loop of up to 5 attempts calling ./call-external-api. On success it echoes 'API call successful' and exits 0. On failure it echoes the attempt number and sleeps i * 10 seconds, giving a progressive backoff of 10s, 20s, 30s, 40s and 50s. If all attempts fail it echoes 'All API call attempts failed' and exits 1. The Job also sets backoffLimit: 3 as additional job-level retries.",
+    "source": "cronjobs.docx"
+  },
+  {
+    "id": "k033",
+    "query": "How should a Kubernetes Job shut down gracefully?",
+    "ideal_answer": "The GracefulJobRunner class registers a signal handler for SIGTERM and SIGINT. On receiving a signal it prints 'Received signal ..., initiating graceful shutdown...' and sets shutdown_requested to True. In run(), for each work item it checks the flag. If shutdown was requested it prints 'Shutdown requested, stopping gracefully...', calls save_progress(item) and exits with sys.exit(0). Otherwise it calls process_item and mark_completed. When all items are done it prints 'All items processed successfully'.",
+    "source": "cronjobs.docx"
+  },
+  {
+    "id": "k034",
+    "query": "What Job design mistakes does the guide recommend avoiding?",
+    "ideal_answer": "There are three anti-patterns. (1) Long-running jobs without checkpointing: for example activeDeadlineSeconds of 86400 (24 hours) running ./process-everything-at-once is too long without checkpoints, and there is no way to resume if interrupted. (2) Jobs with side effects in init containers: critical logic like ./create-tables in an init container won't retry if the main container fails. (3) Hardcoded resource limits: one-size-fits-all limits of cpu 1000m and memory 1Gi may be too little for large datasets or too much for small ones.",
+    "source": "cronjobs.docx"
+  },
+  {
+    "id": "k035",
+    "query": "How do I test a Job locally using Kind?",
+    "ideal_answer": "Create a local cluster with kind create cluster using a config of kind: Cluster, apiVersion kind.x-k8s.io/v1alpha4, with nodes: one control-plane and two worker roles. To test the job locally, run kubectl apply -f test-job.yaml and then kubectl wait --for=condition=complete job/test-job --timeout=300s.",
+    "source": "cronjobs.docx"
+  },
+  {
+    "id": "k036",
+    "query": "How does the Python test check that a Job finishes successfully?",
+    "ideal_answer": "The JobTestCase unittest class creates the namespace test-jobs in setUp and deletes it in tearDown. test_job_completion loads test-job.yaml, sets its namespace to the test namespace, writes it to temp-job.yaml, and applies it with kubectl apply, asserting a return code of 0. It then runs kubectl wait --for=condition=complete with --timeout=300s and asserts success. Finally it reads .status.succeeded with kubectl get and a jsonpath, and asserts the value equals \"1\".",
+    "source": "cronjobs.docx"
+  },
+  {
+    "id": "k037",
+    "query": "How can I test that invalid CronJob schedules are rejected?",
+    "ideal_answer": "The test_cronjob_schedule_validation test tries a list of invalid schedules: \"60 * * * *\" (invalid minute), \"* 25 * * *\" (invalid hour), \"* * 32 * *\" (invalid day) and \"* * * 13 *\" (invalid month). For each one it asserts that create_cronjob_with_schedule raises subprocess.CalledProcessError. That helper writes a CronJob manifest (alpine:latest running echo test, restartPolicy OnFailure) to temp-cronjob.yaml and applies it with kubectl apply using check=True.",
+    "source": "cronjobs.docx"
+  },
+  {
+    "id": "k038",
+    "query": "How can I use Helm to integration-test a Job?",
+    "ideal_answer": "The test is a Pod named job-integration-test with the annotations helm.sh/hook: test, helm.sh/hook-weight: \"1\" and helm.sh/hook-delete-policy: before-hook-creation,hook-succeeded. It has restartPolicy Never and a container test-runner using the image alpine/k8s:1.24.0. The script waits for the job's data-processor to complete with kubectl wait --for=condition=complete and a 300s timeout. It gets the job's pod using the job-name label and pipes kubectl logs through grep for 'Processing completed successfully'. If grep succeeds it prints '✅ Job test passed' and exits 0, otherwise it prints '❌ Job test failed' and exits 1.",
+    "source": "cronjobs.docx"
+  },
+  {
+    "id": "k039",
+    "query": "How does the guide back up Job and CronJob definitions?",
+    "ideal_answer": "A CronJob named backup-job-definitions runs daily at 6 AM (\"0 6 * * *\") with serviceAccountName backup-sa and the image bitnami/kubectl:latest. The script creates a timestamped backup directory, then backs up all CronJobs across all namespaces, recent Jobs (using a field selector on completion time of the last 7 days), and ConfigMaps and Secrets labeled component=batch-job. It uploads the backup recursively to s3://job-backups/<date>/ with aws s3 cp and echoes 'Backup completed'. It uses an emptyDir volume backup-storage at /backup, sets AWS_DEFAULT_REGION to us-west-2, and loads credentials from the secret aws-credentials. The restartPolicy is OnFailure, successfulJobsHistoryLimit is 7 and failedJobsHistoryLimit is 3.",
+    "source": "cronjobs.docx"
+  },
+  {
+    "id": "k040",
+    "query": "How is cross-region replication and failover for Jobs configured?",
+    "ideal_answer": "It uses an Argo CD Application named critical-jobs in the argocd namespace (project default). The source is the repo https://github.com/company/k8s-jobs at targetRevision HEAD, path charts/critical-jobs, with Helm parameters region=us-west-2, backup_region=us-east-1 and enable_cross_region_backup=\"true\". The destination is server https://kubernetes.default.svc, namespace production-jobs. The syncPolicy is automated with prune: true and selfHeal: true.",
+    "source": "cronjobs.docx"
+  },
+  {
+    "id": "k041",
+    "query": "What does the data recovery script do when Jobs fail?",
+    "ideal_answer": "The script recovers data from failed or incomplete jobs through a JobRecoveryManager class. find_failed_jobs(hours=24) runs kubectl get jobs with the field selector status.failed>0 and keeps those whose startTime is within the last N hours. recover_job_data(job_name) gets the job's pods by the job-name selector, extracts each pod's logs with kubectl logs, lists files under /output with kubectl exec find, and records the container exit code. create_recovery_job copies the original job, renames it with a '-recovery-<timestamp>' suffix, removes uid and resourceVersion, and adds env vars RECOVERY_MODE=true and optionally RECOVERY_POINT. The main block finds failed jobs, recovers their data and saves it to <job_name>-recovery.json.",
+    "source": "cronjobs.docx"
+  },
+  {
+    "id": "k042",
+    "query": "What does a cost-optimized Kubernetes Job configuration look like?",
+    "ideal_answer": "The Job cost-optimized-job has the labels cost-center: data-processing and environment: production. It uses a nodeSelector node-type: spot with a toleration for spot=true NoSchedule, to use spot instances. Resources are right-sized, with the lean image my-app:lean-v1.2.0, requests of cpu 200m and memory 256Mi, and limits of cpu 1000m (allow bursting) and memory 1Gi. For efficient storage it mounts an emptyDir temp-storage at /tmp with sizeLimit 1Gi. For fast startup and shutdown it sets terminationGracePeriodSeconds 30, and restartPolicy is Never. To prevent runaway costs it sets activeDeadlineSeconds 3600 (1 hour max) and backoffLimit 2 (limited retries).",
+    "source": "cronjobs.docx"
+  },
+  {
+    "id": "k043",
+    "query": "How can I schedule a CronJob during off-peak hours to reduce cost?",
+    "ideal_answer": "The CronJob cost-effective-processing runs during off-peak hours (2-4 AM) with the schedule \"0 2 * * *\" and timeZone \"UTC\". It prefers preemptible/spot instances through preferredDuringSchedulingIgnoredDuringExecution node affinity with weight 100 on node-lifecycle In [\"spot\", \"preemptible\"]. The container batch-processor uses my-app:latest with requests of cpu 500m and memory 1Gi and limits of cpu 2000m and memory 4Gi, described as burstable QoS for cost efficiency. The restartPolicy is OnFailure and ttlSecondsAfterFinished is 3600 (clean up after 1 hour). History is minimal, with successfulJobsHistoryLimit 1 and failedJobsHistoryLimit 2.",
+    "source": "cronjobs.docx"
+  },
+  {
+    "id": "k044",
+    "query": "How can scheduling a Job on multiple CPU architectures reduce cost?",
+    "ideal_answer": "The Job multi-arch-job allows scheduling on ARM nodes, which are often cheaper. It uses preferredDuringSchedulingIgnoredDuringExecution node affinity with weight 50 on kubernetes.io/arch In [\"arm64\"] and weight 30 on node-cost-tier In [\"low-cost\"]. The container processor uses the multi-architecture image my-app:v1.0.0-multi-arch, with requests of cpu 300m and memory 512Mi.",
+    "source": "cronjobs.docx"
+  },
+  {
+    "id": "k045",
+    "query": "How is audit logging configured for a compliance CronJob?",
+    "ideal_answer": "The CronJob compliance-report-job has labels compliance-required: \"true\" and data-classification: \"sensitive\", and runs monthly with the schedule \"0 0 1 * *\". Its jobTemplate labels are compliance-required: \"true\" and audit-log: \"enabled\". The container compliance-reporter uses the image compliance-tools:v2.1.0 and echoes timestamped [AUDIT] lines showing the service account and the period being processed. It runs ./generate-compliance-report --period=last-month --format=json. On success it logs success and creates a ConfigMap named compliance-audit-<YYYYMM> with status=completed, timestamp and operator. On failure it logs an ERROR and exits 1. The security context is runAsNonRoot, runAsUser 1001, allowPrivilegeEscalation false, readOnlyRootFilesystem true and drop ALL capabilities. Resources are requests of cpu 200m and memory 256Mi and limits of cpu 500m and memory 512Mi. It uses serviceAccountName compliance-job-sa (minimal permissions) and restartPolicy OnFailure. Compliance settings are backoffLimit 1 (no retries) and activeDeadlineSeconds 1800 (30 minutes max). successfulJobsHistoryLimit and failedJobsHistoryLimit are both 12, retained for audit purposes (1 year of monthly reports).",
+    "source": "cronjobs.docx"
+  },
+  {
+    "id": "k046",
+    "query": "How can OPA Gatekeeper require Jobs to define CPU and memory requests and limits?",
+    "ideal_answer": "The policy is 'Jobs must have resource limits'. A ConstraintTemplate named jobrequiresresources defines the CRD kind JobRequiresResources, with a rego package jobrequiresresources. It has two violation rules. For kind Job, a container without resources.limits gives the message 'Job containers must have resource limits defined'. A container without resources.requests gives the message 'Job containers must have resource requests defined'. The Constraint job-must-have-resources of kind JobRequiresResources matches the apiGroup batch, kind Job, in the namespaces production and staging. Its parameters message is 'All job containers must define resource requests and limits for compliance'.",
+    "source": "cronjobs.docx"
+  },
+  {
+    "id": "k047",
+    "query": "What data retention periods does the cleanup CronJob use?",
+    "ideal_answer": "The CronJob data-retention-cleanup runs weekly on Sunday with the schedule \"0 3 * * 0\" and the image data-retention-tools:v1.0.0. Its Python script defines retention policies: application_logs 90 days, audit_logs 2555 days (7 years), user_data 1825 days (5 years), and temp_processing 30 days. For each data type it computes a cutoff date, prints 'Cleaning <type> older than <cutoff>', and writes an audit entry JSON (timestamp, action data_cleanup, data_type, cutoff_date, retention_days) to /audit/cleanup-<data_type>-<date>.json. The /audit directory is mounted from the PVC audit-logs-pvc via the volume audit-storage, and restartPolicy is OnFailure.",
+    "source": "cronjobs.docx"
+  },
+  {
+    "id": "k048",
+    "query": "How does KEDA use queue events to create Jobs?",
+    "ideal_answer": "The KEDA ScaledJob queue-processor has a jobTargetRef template with the container queue-processor (image my-app/queue-processor:latest, command ./process-queue-items) and an env var QUEUE_URL pointing to an SQS processing-queue. The restartPolicy is Never and backoffLimit is 3. Its pollingInterval is 30, maxReplicaCount is 10, and successfulJobsHistoryLimit and failedJobsHistoryLimit are both 5. The trigger is type aws-sqs-queue with queueLength \"5\" (create a new job when 5+ messages are in the queue), awsRegion us-west-2, and authenticationRef named aws-credentials.",
+    "source": "cronjobs.docx"
+  },
+  {
+    "id": "k049",
+    "query": "How are Kubernetes Jobs and Argo Workflows used together in an ML training pipeline?",
+    "ideal_answer": "The Argo Workflow ml-training-pipeline has the entrypoint ml-pipeline, which is a DAG with four tasks: data-preparation (template data-prep-job), model-training (template training-job, depends on data-preparation), model-validation (template validation-job, depends on model-training), and model-deployment (template deployment-job, depends on model-validation). The training-job template is a resource with action create and successCondition status.succeeded > 0. Its manifest creates a batch/v1 Job named ml-training-{{workflow.uid}} using tensorflow/tensorflow:2.8.0-gpu, with nvidia.com/gpu 2 in both limits and requests, memory limit 16Gi and request 8Gi, command python train.py, env MODEL_VERSION from workflow.parameters.model-version, and restartPolicy Never.",
+    "source": "cronjobs.docx"
+  },
+  {
+    "id": "k050",
+    "query": "How can a Kubernetes Job run on a serverless platform using Virtual Kubelet?",
+    "ideal_answer": "The Job serverless-processing uses a nodeSelector with type: virtual-kubelet and kubernetes.io/hostname: virtual-kubelet-azure-aci. Its tolerations are virtual-kubelet.io/provider with operator Exists, and azure.com/aci with effect NoSchedule. The container serverless-worker uses my-app:serverless-optimized with requests of cpu 1000m and memory 2Gi and limits of cpu 4000m and memory 8Gi. It sets imagePullPolicy: Always for fast startup, and env vars EXECUTION_MODE=serverless and OPTIMIZE_FOR_COST=true (optimized for serverless billing). The restartPolicy is Never, and for serverless-friendly timeouts it sets activeDeadlineSeconds 1800 (30 minutes) and ttlSecondsAfterFinished 600 (clean up quickly).",
+    "source": "cronjobs.docx"
+  },
+  {
+    "id": "k051",
+    "query": "What does the guide say about the future of Kubernetes job management?",
+    "ideal_answer": "The future of Kubernetes job management is exciting, with developments in serverless execution, event-driven architectures, and AI/ML workflows. By building a solid foundation with the patterns and practices outlined in the guide, you'll be well-prepared to evolve your job management strategies as the ecosystem continues to mature.",
+    "source": "cronjobs.docx"
+  },
+  {
+    "id": "k052",
+    "query": "What is the title of this presentation, which Kubernetes version does it cover, and what is on the agenda?",
+    "ideal_answer": "The presentation is titled 'Kubernetes: A Comprehensive Overview' and covers Kubernetes v1.8. The agenda has four parts. Introduction (Who am I?, What is Kubernetes?, What does Kubernetes do?). Architecture (Master Components, Node Components, Additional Services, Networking). Concepts (Core, Workloads, Network, Storage, Configuration, Auth and Identity). It ends with Behind the Scenes (Deployment from Beginning to End).",
+    "source": "architecture.pptx"
+  },
+  {
+    "id": "k053",
+    "query": "What is Kubernetes and where did it come from?",
+    "ideal_answer": "Kubernetes (K8s) was a project spun out of Google as an open source next-gen container scheduler. It was designed with the lessons learned from developing and managing Borg and Omega. It was designed from the ground up as a loosely coupled collection of components centered around deploying, maintaining, and scaling applications.",
+    "source": "architecture.pptx"
+  },
+  {
+    "id": "k054",
+    "query": "Why does the presentation compare Kubernetes to the Linux kernel of distributed systems?",
+    "ideal_answer": "The presentation describes Kubernetes as 'the linux kernel of distributed systems.' It says that Kubernetes abstracts away the underlying hardware of the nodes and provides a uniform interface for applications to be both deployed and consume the shared pool of resources.",
+    "source": "architecture.pptx"
+  },
+  {
+    "id": "k055",
+    "query": "What is the difference between masters and nodes in a Kubernetes cluster?",
+    "ideal_answer": "Masters act as the primary control plane for Kubernetes. At a minimum they are responsible for running the API Server, scheduler, and cluster controller. They commonly also manage storing cluster state, cloud-provider specific components and other cluster essential services. Nodes are the 'workers' of a Kubernetes cluster. They run a minimal agent that manages the node itself, and are tasked with executing workloads as designated by the master.",
+    "source": "architecture.pptx"
+  },
+  {
+    "id": "k056",
+    "query": "Which components run on the Kubernetes master?",
+    "ideal_answer": "The master components are kube-apiserver, etcd, kube-controller-manager, cloud-controller-manager, and kube-scheduler.",
+    "source": "architecture.pptx"
+  },
+  {
+    "id": "k057",
+    "query": "What does kube-apiserver do, and why is it called the cluster's gatekeeper?",
+    "ideal_answer": "The apiserver provides a forward facing REST interface into the kubernetes control plane and datastore. All clients, including nodes, users and other applications, interact with kubernetes strictly through the API Server. It is the true core of Kubernetes, acting as the gatekeeper to the cluster. It handles authentication and authorization, request validation, mutation, and admission control, in addition to being the front-end to the backing datastore.",
+    "source": "architecture.pptx"
+  },
+  {
+    "id": "k058",
+    "query": "What is etcd used for in Kubernetes?",
+    "ideal_answer": "Etcd acts as the cluster datastore. It provides a strong, consistent and highly available key-value store used for persisting cluster state.",
+    "source": "architecture.pptx"
+  },
+  {
+    "id": "k059",
+    "query": "What is the role of the kube-controller-manager?",
+    "ideal_answer": "The controller-manager is the primary daemon that manages all core component control loops. It monitors the cluster state via the apiserver and steers the cluster towards the desired state. The slide also points to a GitHub link (the controllermanager.go file in the kubernetes repo) for the list of core controllers.",
+    "source": "architecture.pptx"
+  },
+  {
+    "id": "k060",
+    "query": "What does cloud-controller-manager do, and which controllers does it include?",
+    "ideal_answer": "The cloud-controller-manager is a daemon that provides cloud-provider specific knowledge and integration capability into the core control loop of Kubernetes. The controllers include Node, Route, and Service, and it adds an additional controller to handle PersistentVolumeLabels.",
+    "source": "architecture.pptx"
+  },
+  {
+    "id": "k061",
+    "query": "How does the Kubernetes scheduler choose a node for a workload?",
+    "ideal_answer": "Kube-scheduler is a verbose policy-rich engine that evaluates workload requirements and attempts to place it on a matching resource. These requirements can include such things as general hardware requirements, affinity, anti-affinity, and other custom resource requirements.",
+    "source": "architecture.pptx"
+  },
+  {
+    "id": "k062",
+    "query": "What are the components that run on every Kubernetes node?",
+    "ideal_answer": "The node components are Kubelet, Kube-proxy, and the Container runtime engine.",
+    "source": "architecture.pptx"
+  },
+  {
+    "id": "k063",
+    "query": "What does the kubelet do, and where can it get container manifests from?",
+    "ideal_answer": "The kubelet acts as the node agent responsible for managing pod lifecycle on its host. It understands YAML container manifests that it can read from several sources: a file path, an HTTP endpoint, an etcd watch acting on any changes, and HTTP server mode accepting container manifests over a simple API.",
+    "source": "architecture.pptx"
+  },
+  {
+    "id": "k064",
+    "query": "kube-proxy kya karta hai aur kaunse proxy modes available hain?",
+    "ideal_answer": "Kube-proxy manages the network rules on each node and performs connection forwarding or load balancing for Kubernetes cluster services. The available proxy modes are Userspace, iptables, and ipvs (alpha in 1.8).",
+    "source": "architecture.pptx"
+  },
+  {
+    "id": "k065",
+    "query": "What is a container runtime in Kubernetes, and which runtimes does the presentation list?",
+    "ideal_answer": "With respect to Kubernetes, a container runtime is a CRI (Container Runtime Interface) compatible application that executes and manages containers. The listed runtimes are Containerd (docker), Cri-o, Rkt, Kata (formerly clear and hyper), and Virtlet (a VM CRI compatible runtime).",
+    "source": "architecture.pptx"
+  },
+  {
+    "id": "k066",
+    "query": "What other services run in a Kubernetes cluster besides the master and node components?",
+    "ideal_answer": "Kube-dns provides cluster wide DNS services; services are resolvable to <service>.<namespace>.svc.cluster.local. Heapster is the metrics collector for the kubernetes cluster, used by some resources such as the Horizontal Pod Autoscaler (and required for kube-dashboard metrics). Kube-dashboard is a general purpose web based UI for kubernetes.",
+    "source": "architecture.pptx"
+  },
+  {
+    "id": "k067",
+    "query": "What are the basic networking rules in Kubernetes?",
+    "ideal_answer": "There are three rules. All Pods can communicate with all other Pods without NAT. All nodes can communicate with all Pods (and vice-versa) without NAT. The IP that a Pod sees itself as is the same IP that others see it as.",
+    "source": "architecture.pptx"
+  },
+  {
+    "id": "k068",
+    "query": "How do Kubernetes networking rules work for containers, Pods, Services, and external access?",
+    "ideal_answer": "Containers in a pod exist within the same network namespace and share an IP, allowing intrapod communication over localhost. Pods are given a cluster unique IP for the duration of their lifecycle, but pods themselves are fundamentally ephemeral. Services are given a persistent cluster unique IP that spans the Pods lifecycle. External connectivity is generally handled by an integrated cloud provider or other external entity (load balancer).",
+    "source": "architecture.pptx"
+  },
+  {
+    "id": "k069",
+    "query": "What is CNI, and which network plugins are listed as compatible?",
+    "ideal_answer": "Networking within Kubernetes is plumbed via the Container Network Interface (CNI), an interface between a container runtime and a network implementation plugin. The compatible CNI network plugins listed are Calico, Cillium, Contiv, Contrail, Flannel, GCE, kube-router, Multus, OpenVSwitch, OVN, Romana, and Weave.",
+    "source": "architecture.pptx"
+  },
+  {
+    "id": "k070",
+    "query": "How are Cluster, Master, Node, and Namespace defined in Kubernetes?",
+    "ideal_answer": "A Cluster is a collection of hosts that aggregate their available resources, including cpu, ram, disk, and their devices, into a usable pool. The Master(s) represent a collection of components that make up the control plane of Kubernetes, responsible for all cluster decisions including both scheduling and responding to cluster events. A Node is a single host, physical or virtual, capable of running pods. It is managed by the master(s) and at a minimum runs both kubelet and kube-proxy to be considered part of the cluster. A Namespace is a logical cluster or environment, and the primary method of dividing a cluster or scoping access.",
+    "source": "architecture.pptx"
+  },
+  {
+    "id": "k071",
+    "query": "What is the difference between labels, annotations, and selectors?",
+    "ideal_answer": "Labels are key-value pairs used to identify, describe and group together related sets of objects, and they have a strict syntax and available character set. Annotations are key-value pairs that contain non-identifying information or metadata. They do not have the syntax limitations of labels and can contain structured or unstructured data. Selectors use labels to filter or select objects. Both equality-based (=, ==, !=) and simple key-value matching selectors are supported.",
+    "source": "architecture.pptx"
+  },
+  {
+    "id": "k072",
+    "query": "Can you show an example of labels, annotations and a selector for an nginx frontend?",
+    "ideal_answer": "The example labels are app: nginx and tier: frontend. The annotation is description: \"nginx frontend\". The selector is app: nginx and tier: frontend.",
+    "source": "architecture.pptx"
+  },
+  {
+    "id": "k073",
+    "query": "Which operators are supported by set-based selectors, and which resources can use them?",
+    "ideal_answer": "The valid operators are In, NotIn, Exists, and DoesNotExist. The objects that support set-based selectors are Job, Deployment, ReplicaSet, DaemonSet, and PersistentVolumeClaims.",
+    "source": "architecture.pptx"
+  },
+  {
+    "id": "k074",
+    "query": "What are Pods, ReplicationControllers, ReplicaSets, and Deployments?",
+    "ideal_answer": "A Pod is the smallest unit of work or management resource within Kubernetes. It comprises one or more containers that share their storage, network, and context (namespace, cgroups etc). A ReplicationController is a method of managing pod replicas and their lifecycle: their scheduling, scaling, and deletion. A ReplicaSet is the next generation ReplicationController and supports set-based selectors. A Deployment is a declarative method of managing stateless Pods and ReplicaSets, providing rollback functionality in addition to more granular update control mechanisms.",
+    "source": "architecture.pptx"
+  },
+  {
+    "id": "k075",
+    "query": "How are a Deployment and its ReplicaSet related?",
+    "ideal_answer": "The Deployment contains the configuration of how updates or 'deployments' should be managed, in addition to the pod template used to generate the ReplicaSet. The ReplicaSet is generated from the Deployment spec.",
+    "source": "architecture.pptx"
+  },
+  {
+    "id": "k076",
+    "query": "What is a StatefulSet, and how does it handle Pod names and storage?",
+    "ideal_answer": "A StatefulSet is a controller tailored to managing Pods that must persist or maintain state. Pod identity, including hostname, network, and storage, will be persisted. It attaches to a 'headless service' (not shown in the slide) named nginx. Pods are given unique ordinal names using the pattern <statefulset name>-<ordinal index>. It creates independent persistent volumes based on the 'volumeClaimTemplates'.",
+    "source": "architecture.pptx"
+  },
+  {
+    "id": "k077",
+    "query": "What does a DaemonSet do, and how does it place Pods on nodes?",
+    "ideal_answer": "A DaemonSet ensures that all nodes matching certain criteria will run an instance of a supplied Pod. It is ideal for cluster wide services such as log forwarding or health monitoring. It bypasses the default scheduler and schedules a single instance on every host while adhering to tolerances and taints.",
+    "source": "architecture.pptx"
+  },
+  {
+    "id": "k078",
+    "query": "What does the Job controller do, and are finished Jobs and Pods cleaned up automatically?",
+    "ideal_answer": "The job controller ensures one or more pods are executed and successfully terminate. It does this until it satisfies the completion and/or parallelism condition. The number of pod executions can be controlled via spec.completions, and Jobs can be parallelized using spec.parallelism. Jobs and Pods are NOT automatically cleaned up after a job has completed.",
+    "source": "architecture.pptx"
+  },
+  {
+    "id": "k079",
+    "query": "How does a CronJob relate to a Job?",
+    "ideal_answer": "A CronJob is an extension of the Job Controller, providing a method of executing jobs on a cron-like schedule. It adds a cron schedule to the job template.",
+    "source": "architecture.pptx"
+  },
+  {
+    "id": "k080",
+    "query": "What are Kubernetes Services and Ingress used for?",
+    "ideal_answer": "A Service provides a method of exposing and consuming L4 Pod network accessible resources. It uses label selectors to map groups of pods and ports to a cluster-unique virtual IP. An Ingress controller is the primary method of exposing a cluster service (usually http) to the outside world. These are load balancers or routers that usually offer SSL termination, name-based virtual hosting etc.",
+    "source": "architecture.pptx"
+  },
+  {
+    "id": "k081",
+    "query": "What are the four major Service types?",
+    "ideal_answer": "A Service acts as the unified method of accessing replicated pods. ClusterIP exposes the service on a strictly cluster-internal IP (default). NodePort exposes the service on each node's IP on a statically defined port. LoadBalancer works in combination with a cloud provider to expose the service outside the cluster on a static external IP. ExternalName is used to reference endpoints OUTSIDE the cluster by providing a static internally referenced DNS name.",
+    "source": "architecture.pptx"
+  },
+  {
+    "id": "k082",
+    "query": "How are Ingress controllers deployed, and how do you pass controller-specific settings to them?",
+    "ideal_answer": "Ingress controllers are deployed as a pod to one or more hosts. They are external controllers with multiple options: Nginx, HAproxy, Contour, and Traefik. Specific features and controller-specific configuration are passed through annotations.",
+    "source": "architecture.pptx"
+  },
+  {
+    "id": "k083",
+    "query": "What are Volumes, PersistentVolumes, PersistentVolumeClaims, and StorageClasses?",
+    "ideal_answer": "A Volume is storage that is tied to the Pod lifecycle, consumable by one or more containers within the pod. A PersistentVolume (PV) represents a storage resource, commonly linked to a backing storage resource such as NFS, GCEPersistentDisk, or RBD, and provisioned ahead of time. Its lifecycle is handled independently from a pod. A PersistentVolumeClaim (PVC) is a request for storage that satisfies a set of requirements instead of mapping to a storage resource directly, and is commonly used with dynamically provisioned storage. Storage classes are an abstraction on top of an external storage resource and include a provisioner, provisioner configuration parameters, and a PV reclaimPolicy.",
+    "source": "architecture.pptx"
+  },
+  {
+    "id": "k084",
+    "query": "What are the main PersistentVolume settings and access modes?",
+    "ideal_answer": "PVs are a cluster-wide resource and are not directly consumable by a Pod. The PV parameters are Capacity, accessModes, persistentVolumeReclaimPolicy, and StorageClass. The accessModes are ReadOnlyMany (ROX), ReadWriteOnce (RWO), and ReadWriteMany (RWX). The persistentVolumeReclaimPolicy options are Retain, Recycle, and Delete.",
+    "source": "architecture.pptx"
+  },
+  {
+    "id": "k085",
+    "query": "How do PersistentVolumeClaims work, and what is their scope?",
+    "ideal_answer": "PVCs are scoped to namespaces. They support accessModes like PVs and use a resource request model similar to Pods. Claims will consume storage from matching PVs or StorageClasses based on storageClass and selectors.",
+    "source": "architecture.pptx"
+  },
+  {
+    "id": "k086",
+    "query": "What is a StorageClass, and what fields does it have?",
+    "ideal_answer": "A StorageClass uses an external system, defined by the provisioner, to dynamically consume and allocate storage. Its fields are Provisioner, Parameters, and reclaimPolicy.",
+    "source": "architecture.pptx"
+  },
+  {
+    "id": "k087",
+    "query": "What is the difference between a ConfigMap and a Secret?",
+    "ideal_answer": "A ConfigMap is externalized data stored within kubernetes that can be referenced as a commandline argument, environment variable, or injected as a file into a volume mount. It is ideal for separating a containerized application from its configuration. A Secret is functionally identical to a ConfigMap, but is stored encoded as base64 and encrypted at rest (if configured).",
+    "source": "architecture.pptx"
+  },
+  {
+    "id": "k088",
+    "query": "How can I use ConfigMaps and Secrets in a Pod?",
+    "ideal_answer": "They can be injected as a file, passed as an environment variable, or used as a container command (which requires passing it as an env var).",
+    "source": "architecture.pptx"
+  },
+  {
+    "id": "k089",
+    "query": "What are Role, ClusterRole, RoleBinding, and ServiceAccount used for in Kubernetes RBAC?",
+    "ideal_answer": "[Cluster]Roles contain rules that act as a set of permissions, applying verbs like 'get', 'list', 'watch' etc. over resources that are scoped to apiGroups. Roles are scoped to namespaces, and ClusterRoles are applied cluster-wide. [Cluster]RoleBindings grant the permissions defined in a [Cluster]Role to one or more 'subjects', which can be a user, group, or service account. ServiceAccounts provide a consumable identity for pods or external services that interact with the cluster directly, and are scoped to namespaces.",
+    "source": "architecture.pptx"
+  },
+  {
+    "id": "k090",
+    "query": "What do apiGroups, resources, and verbs mean in a Role or ClusterRole?",
+    "ideal_answer": "Permissions translate to url path, with \"\" defaulting to the core group. Resources act as items the role should be granted access to. Verbs are the actions the role can perform on the referenced resources.",
+    "source": "architecture.pptx"
+  },
+  {
+    "id": "k091",
+    "query": "Which subjects can a RoleBinding reference, and how many roles can it point to?",
+    "ideal_answer": "A [Cluster]RoleBinding can reference multiple subjects. Subjects can be of kind User, Group, or ServiceAccount. The roleRef targets a single role only.",
+    "source": "architecture.pptx"
+  },
+  {
+    "id": "k092",
+    "query": "What does kubectl do first when I submit a manifest?",
+    "ideal_answer": "Kubectl performs client side validation on the manifest (linting). The manifest is then prepared and serialized, creating a JSON payload.",
+    "source": "architecture.pptx"
+  },
+  {
+    "id": "k093",
+    "query": "What happens inside the API server when it receives a request?",
+    "ideal_answer": "Kubectl authenticates to the apiserver via x509, jwt, http auth proxy, other plugins, or http-basic auth. Authorization iterates over available AuthZ sources: Node, ABAC, RBAC, or webhook. AdmissionControl checks resource quotas, other security related checks etc. The request is stored in etcd. Initializers are given the opportunity to mutate the request before the object is published. The request is then published on the apiserver.",
+    "source": "architecture.pptx"
+  },
+  {
+    "id": "k094",
+    "query": "What does the Deployment Controller do after a new Deployment is created?",
+    "ideal_answer": "The Deployment Controller is notified of the new Deployment via callback. It evaluates cluster state, reconciles the desired vs current state, and forms a request for the new ReplicaSet. The apiserver request loop evaluates the Deployment Controller's request, and the ReplicaSet is published.",
+    "source": "architecture.pptx"
+  },
+  {
+    "id": "k095",
+    "query": "What does the ReplicaSet Controller do after a ReplicaSet is created?",
+    "ideal_answer": "The ReplicaSet Controller is notified of the new ReplicaSet via callback. It evaluates cluster state, reconciles the desired vs current state, and forms a request for the desired amount of pods. The apiserver request loop evaluates the ReplicaSet Controller's request. The Pods are published and enter the 'Pending' phase.",
+    "source": "architecture.pptx"
+  },
+  {
+    "id": "k096",
+    "query": "How does the scheduler assign a Pod to a node during deployment?",
+    "ideal_answer": "The scheduler monitors published pods with no 'NodeName' assigned. It applies scheduling rules and filters to find a suitable node to host the Pod. It creates a binding of Pod to Node and POSTs it to the apiserver. The apiserver request loop evaluates the POST request, and the Pod status is updated with the node binding and set to 'PodScheduled'.",
+    "source": "architecture.pptx"
+  },
+  {
+    "id": "k097",
+    "query": "What happens during the kubelet's PodSync process?",
+    "ideal_answer": "The kubelet daemon on every node polls the apiserver, filtering for pods matching its own 'NodeName', and checks its current state against the desired state published through the apiserver. It then moves through a series of internal processes to prepare the pod environment, including pulling secrets, provisioning storage, applying AppArmor profiles and other various scaffolding. During this period it asynchronously POSTs the 'PodStatus' to the apiserver through the standard apiserver request loop.",
+    "source": "architecture.pptx"
+  },
+  {
+    "id": "k098",
+    "query": "What is the pause container, and how is the Pod network set up?",
+    "ideal_answer": "The kubelet provisions a 'pause' container via the CRI (Container Runtime Interface), and the pause container acts as the parent container for the Pod. The network is plumbed to the Pod via the CNI (Container Network Interface), creating a veth pair attached to the pause container and to a container bridge (cbr0). IPAM handled by the CNI plugin assigns an IP to the pause container.",
+    "source": "architecture.pptx"
+  },
+  {
+    "id": "k099",
+    "query": "In what order does the kubelet start init containers and primary containers?",
+    "ideal_answer": "The kubelet pulls the container images. It first creates and starts any init containers. Once the optional init containers complete, the primary pod containers are started.",
+    "source": "architecture.pptx"
+  },
+  {
+    "id": "k100",
+    "query": "When does a Pod become Ready after its containers start?",
+    "ideal_answer": "If there are any liveness/readiness probes, these are executed before the PodStatus is updated. If all complete successfully, PodStatus is set to ready and the container has started successfully. At that point, the Pod is deployed.",
+    "source": "architecture.pptx"
+  },
+  {
+    "id": "k101",
+    "query": "Can you walk me through what happens from kubectl creating a Deployment to a running Pod?",
+    "ideal_answer": "Kubectl validates the manifest client-side and serializes it into a JSON payload. The apiserver request loop authenticates, authorizes, runs admission control, stores the request in etcd, lets initializers mutate it, and publishes it. The Deployment Controller is notified, reconciles desired vs current state, and requests a new ReplicaSet, which is published. The ReplicaSet Controller is notified and requests the desired number of pods, which are published in the 'Pending' phase. The scheduler finds pods with no NodeName, picks a suitable node, and POSTs a binding to the apiserver, and the Pod status becomes 'PodScheduled'. The kubelet on that node polls for pods matching its NodeName and prepares the pod environment (secrets, storage, AppArmor profiles). It provisions the pause container via CRI and plumbs the network via CNI, with the CNI plugin assigning an IP. It then pulls images, starts init containers, and starts the primary containers. Once any liveness/readiness probes succeed, PodStatus is set to ready and the Pod is deployed.",
+    "source": "architecture.pptx"
+  },
+  {
+    "id": "g001",
+    "query": "What is a Kubernetes Job and what do restartPolicy and backoffLimit mean in the hello-job config?",
+    "ideal_answer": "A Kubernetes Job is a controller that creates one or more pods and ensures they successfully terminate. Jobs are useful for batch processes, one-time tasks, or any task that should run to completion rather than indefinitely. In the hello-job example (apiVersion batch/v1, kind Job), the container uses the busybox:1.28 image and runs a command that prints \"Hello, Kubernetes!\" and then sleeps for 5 seconds. The restartPolicy is Never, meaning the container won't be restarted after completion. The backoffLimit is 4, meaning the job will retry up to 4 times if it fails.",
+    "source": "monitor_job.docx"
+  },
+  {
+    "id": "g002",
+    "query": "What do the columns in kubectl get jobs mean, and what does 0/1 in COMPLETIONS mean?",
+    "ideal_answer": "Running `kubectl get jobs` shows four columns. NAME is the name of the job. COMPLETIONS is the number of completed pods divided by the desired completions (for example 1/1). DURATION is how long the job took to run. AGE is how long it has been since the job was created. If a job shows 0/1 under COMPLETIONS, it might still be running or it has failed, so you should wait a few seconds and run the command again.",
+    "source": "monitor_job.docx"
+  },
+  {
+    "id": "g003",
+    "query": "How do I find the Pods created by a Job and view their logs after the Job finishes?",
+    "ideal_answer": "Each job creates one or more pods whose names include the job name and a random suffix. You can list pods with `kubectl get pods --show-labels` and look for labels like job-name=hello-job or job-name=long-job, or filter directly with `kubectl get pods -l job-name=<job-name>`. Then view the logs with `kubectl logs <pod-name>`. For hello-job's pod (for example hello-job-abcd1) this prints \"Hello, Kubernetes!\", and for long-job it prints \"Starting long job...\" followed by \"Long job completed!\". You can view logs even after the job has completed, which is very useful for debugging and auditing purposes.",
+    "source": "monitor_job.docx"
+  },
+  {
+    "id": "g004",
+    "query": "How can I stream the logs of a running job in real time?",
+    "ideal_answer": "Use the -f flag with the logs command: `kubectl logs -f <pod-name>`. This follows the logs of a running job as the output is produced, and is particularly useful for longer-running jobs where you want to see the output as it happens. In the counter-job example, which prints a count from 1 to 5 with a 5-second sleep between each, you first find the pod with `kubectl get pods -l job-name=counter-job` and then follow it, seeing the count increment every 5 seconds. Press Ctrl+C to stop following the logs.",
+    "source": "monitor_job.docx"
+  },
+  {
+    "id": "g005",
+    "query": "How do I use labels to organize and filter Kubernetes jobs?",
+    "ideal_answer": "Labels are key-value pairs that can be attached to Kubernetes resources and are useful for organizing and selecting subsets of resources. You add them under metadata.labels in the job YAML; the example labeled-job uses department: engineering, app: demo, and environment: training. You can then filter with `kubectl get jobs -l department=engineering`, which shows only jobs with that label. For more specific filtering, combine multiple labels separated by a comma, for example `kubectl get jobs -l department=engineering,environment=training`.",
+    "source": "monitor_job.docx"
+  },
+  {
+    "id": "g006",
+    "query": "What will I learn from this tutorial about monitoring Kubernetes Jobs and logs?",
+    "ideal_answer": "Kubernetes is a container orchestration platform, and its job management system lets you run batch-oriented workloads to completion. The tutorial teaches you to monitor the status of Kubernetes jobs and analyze their logs. By the end you can set up a Kubernetes environment using Minikube, create jobs with various configurations, monitor job status using kubectl get and kubectl describe, access and analyze job logs using kubectl logs, use advanced techniques like labels, events, and JSONPath for more effective monitoring, and create scheduled jobs using CronJobs. As next topics it suggests resource management, job parallelism, and integrating with external monitoring solutions like Prometheus and Grafana.",
+    "source": "monitor_job.docx"
+  },
+  {
+    "id": "g007",
+    "query": "How do I install and start Minikube for a local Kubernetes cluster?",
+    "ideal_answer": "Minikube creates a single-node Kubernetes cluster on your local machine. It is typically pre-installed on many lab environments, so you verify the installation with `minikube version`, which prints output like minikube version: v1.29.0 along with a commit hash. Start the cluster with `minikube start --driver=docker`. This takes a few minutes while Minikube downloads the necessary components and starts the cluster. When it completes you see a message saying kubectl is now configured to use the \"minikube\" cluster and the \"default\" namespace by default.",
+    "source": "monitor_job.docx"
+  },
+  {
+    "id": "g008",
+    "query": "How can I check that my Kubernetes cluster is running correctly?",
+    "ideal_answer": "Run `kubectl get nodes` to check the node status. You should see a node named minikube with STATUS Ready, ROLES control-plane, and a version such as v1.26.3. You should also check that the core Kubernetes components are running with `kubectl get pods -n kube-system`, which should show several running pods including kube-apiserver, kube-controller-manager, and others. Once the cluster is running, you are ready to create and monitor jobs.",
+    "source": "monitor_job.docx"
+  },
+  {
+    "id": "g009",
+    "query": "How do I create the hello-job in the cluster from the YAML file?",
+    "ideal_answer": "First create a file called hello-job.yaml in your project directory (cd ~/project, then nano hello-job.yaml), paste in the job YAML, save with Ctrl+O then Enter, and exit nano with Ctrl+X. Then create the job with `kubectl apply -f hello-job.yaml`. You should see the output job.batch/hello-job created, which confirms the job has been created.",
+    "source": "monitor_job.docx"
+  },
+  {
+    "id": "g010",
+    "query": "What information does kubectl describe job show, and where can I find the Job's events?",
+    "ideal_answer": "`kubectl describe job hello-job` provides extensive information about a job, including labels and annotations, selector details, parallelism and completion requirements, pod statuses, and events related to the job. You should look at the Events section at the bottom, which shows important events such as pod creation and completion.",
+    "source": "monitor_job.docx"
+  },
+  {
+    "id": "g011",
+    "query": "What statuses can a Kubernetes Job have, and how do I check whether its Pod completed?",
+    "ideal_answer": "A job can have several statuses. Active means the job is still running. Completed means the job has completed successfully. Failed means the job has failed after reaching its backoff limit. To check whether a job's pod has completed, run `kubectl get pods`. A finished pod such as hello-job-abcd1 shows READY 0/1, STATUS Completed, and RESTARTS 0. The Completed value in the STATUS column indicates that the job ran successfully.",
+    "source": "monitor_job.docx"
+  },
+  {
+    "id": "g012",
+    "query": "How can I observe a job in the Active state with a job that takes longer to run?",
+    "ideal_answer": "Create a job such as long-job, defined in long-job.yaml with the busybox:1.28 image, a command that prints \"Starting long job...\", sleeps for 30 seconds, and then prints \"Long job completed!\", with restartPolicy Never and backoffLimit 4. Create it with `kubectl apply -f long-job.yaml` and immediately run `kubectl get jobs`. You will see long-job with 0/1 completions because it is still running. If you keep checking every few seconds, it changes to 1/1 after about 30 seconds. This demonstrates how you can monitor the progress of your jobs in real time using kubectl.",
+    "source": "monitor_job.docx"
+  },
+  {
+    "id": "g013",
+    "query": "How do I view Kubernetes events for my jobs?",
+    "ideal_answer": "Kubernetes generates events for various state changes in your jobs, and these provide valuable information about the lifecycle of the jobs. Run `kubectl get events --sort-by=.metadata.creationTimestamp` to show all events in your namespace sorted by time. To filter for events related to a specific job, use `kubectl get events --field-selector involvedObject.name=labeled-job`. These events help you understand when and why jobs were created, started, or encountered issues.",
+    "source": "monitor_job.docx"
+  },
+  {
+    "id": "g014",
+    "query": "How can I use JSONPath to extract specific fields from kubectl output?",
+    "ideal_answer": "Kubernetes allows you to use JSONPath to extract specific fields from the output of kubectl commands, which is useful for focusing on particular aspects of your jobs. For example, `kubectl get job labeled-job -o jsonpath='{.status.succeeded}'` outputs the number of succeeded pods for the labeled-job. To get the creation time of a job, use `kubectl get job labeled-job -o jsonpath='{.metadata.creationTimestamp}'`.",
+    "source": "monitor_job.docx"
+  },
+  {
+    "id": "g015",
+    "query": "How do I create a CronJob that runs on a schedule, then check its Jobs and logs?",
+    "ideal_answer": "Kubernetes provides CronJobs for tasks that need to run on a schedule. The CronJob YAML uses apiVersion batch/v1 and kind CronJob, with a schedule such as \"*/1 * * * *\" (run every minute) and a jobTemplate containing the pod spec; in the example the container uses busybox:1.28 to print the date and \"Hello from CronJob\", with restartPolicy Never. Create it with `kubectl apply -f simple-cronjob.yaml` and check it with `kubectl get cronjobs`, which shows NAME, SCHEDULE, SUSPEND, ACTIVE, LAST SCHEDULE, and AGE. After a minute or two, `kubectl get jobs` shows jobs named like simple-cronjob-<timestamp>. To view the logs of the most recent execution, find the pod with `kubectl get pods --sort-by=.metadata.creationTimestamp` and then run `kubectl logs <latest-cronjob-pod>`. The same monitoring techniques apply to CronJobs.",
+    "source": "monitor_job.docx"
+  },
+  {
+    "id": "g016",
+    "query": "How do I clean up the Jobs and CronJob I created?",
+    "ideal_answer": "Delete the jobs with `kubectl delete job hello-job long-job failed-job counter-job labeled-job` and delete the CronJob with `kubectl delete cronjob simple-cronjob`. This removes all the jobs and the CronJob from your cluster.",
+    "source": "monitor_job.docx"
+  },
+  {
+    "id": "g017",
+    "query": "How do I create and troubleshoot a Kubernetes Job that fails?",
+    "ideal_answer": "The failed-job example uses busybox:1.28 with a command that prints \"Attempting task...\" and then runs `exit 1`, so it always exits with status code 1, which indicates failure. It has restartPolicy Never and backoffLimit 2. Create it with `kubectl apply -f failed-job.yaml`, wait a few moments for it to attempt and fail up to the backoff limit, then check `kubectl get jobs failed-job`, which shows 0/1 completions. Running `kubectl get pods -l job-name=failed-job` shows several pods, all in the Error state. Choose one and run `kubectl logs <failed-pod-name>`, which shows \"Attempting task...\". This shows the task started and then exited with an error code, which is crucial information for debugging job failures.",
+    "source": "monitor_job.docx"
+  },
+  {
+    "id": "k001",
+    "query": "How does the Kubernetes parallel work-queue example work?",
+    "ideal_answer": "It is an example of running a Kubernetes Job that launches multiple parallel tasks as worker processes, each running as a separate Pod. As each pod is created, it picks up one unit of work from a task queue, processes it, and repeats until the end of the queue is reached. The overall steps are: start a storage service to hold the work queue (Redis is used), create a queue and fill it with messages, and start a Job that works on tasks from the queue. The reference documentation is at https://kubernetes.io/docs/tasks/job/fine-parallel-processing-work-queue/.",
+    "source": "parallel_work_queue.txt"
+  },
+  {
+    "id": "k002",
+    "query": "How do I fill the Redis queue with tasks for the Kubernetes work queue Job?",
+    "ideal_answer": "Start a temporary interactive pod for running the Redis CLI with `kubectl run -i --tty temp --image redis --command \"/bin/sh\"`. Once the prompt appears, connect to Redis using `redis-cli -h redis`. Then push items onto the queue named \"job2\" using `rpush job2 \"<item>\"` for each task (the example pushes apple, banana, cherry, date, fig, grape, lemon, melon and orange). You can verify the queue contents with `lrange job2 0 -1`.",
+    "source": "parallel_work_queue.txt"
+  },
+  {
+    "id": "k003",
+    "query": "How does the worker script know when to stop?",
+    "ideal_answer": "The worker connects to the Redis work queue named \"job2\" using the rediswq library and loops with `while not q.empty()`. Inside the loop it leases an item with `q.lease(lease_secs=10, block=True, timeout=2)`. If an item is returned, it decodes and processes it (simulated with a 10-second sleep, which should be replaced by real work) and then calls `q.complete(item)`. If no item is returned, it prints \"Waiting for work\". When the queue is empty, the loop ends, it prints \"Queue empty, exiting\", and the worker exits. Exiting with success is how workers signal that the queue is empty.",
+    "source": "parallel_work_queue.txt"
+  },
+  {
+    "id": "k004",
+    "query": "kubernetes job.yaml me parallelism aur restartPolicy kya set karni hai work queue ke liye?",
+    "ideal_answer": "The Job manifest (job.yaml) uses apiVersion batch/v1 and kind Job with the name job-wq-2. In its spec, `parallelism` is set to 2, meaning two worker pods run in parallel. The pod template has a container named \"c\" using the image you pushed to your registry (replace the placeholder `gcr.io/myproject/job-wq-2` with your own registry path), and `restartPolicy` is set to OnFailure. In this example each pod works on several items from the queue and then exits, signaling success when the queue is empty.",
+    "source": "parallel_work_queue.txt"
+  },
+  {
+    "id": "k005",
+    "query": "How do I run the work-queue Job, check its status, and view worker logs?",
+    "ideal_answer": "Run the Job with `kubectl apply -f ./job.yaml`. Check on it with `kubectl describe jobs/job-wq-2`. To wait for it to finish, use `kubectl wait --for=condition=complete --timeout=300s job/job-wq-2`. To see the work being done, check a worker pod's logs with `kubectl logs pods/job-wq-2-xxxxx`, where xxxxx is the pod's suffix.",
+    "source": "parallel_work_queue.txt"
+  },
+  {
+    "id": "k006",
+    "query": "What do I need before starting the Kubernetes parallel work-queue example?",
+    "ideal_answer": "You need a running Kubernetes cluster with the kubectl command-line tool configured to talk to it. You also need a container image registry, such as Docker Hub, where you can upload the images that will run in your cluster.",
+    "source": "parallel_work_queue.txt"
+  },
+  {
+    "id": "k007",
+    "query": "How do I start Redis for the Kubernetes work-queue example?",
+    "ideal_answer": "For this example you start a single instance of Redis by applying two manifests: `kubectl apply -f https://k8s.io/examples/application/job/redis/redis-pod.yaml` to create the Redis pod, and `kubectl apply -f https://k8s.io/examples/application/job/redis/redis-service.yaml` to create the Redis service. Redis acts as the storage service that holds the work queue.",
+    "source": "parallel_work_queue.txt"
+  },
+  {
+    "id": "k008",
+    "query": "How do I build and push the worker container image for the work-queue Job?",
+    "ideal_answer": "The worker is a Python program (worker.py) that reads from the queue. Build the image with Docker using `docker build -t job-wq-2 .`. Then tag it with your registry username using `docker tag job-wq-2 <username>/job-wq-2` and push it with `docker push <username>/job-wq-2`, replacing <username> with your Hub username. The image path you push to is the one you then put in the Job manifest.",
+    "source": "parallel_work_queue.txt"
+  },
+  {
+    "id": "k009",
+    "query": "How does worker.py find the Redis host, and what can I do if Kube-DNS is not working?",
+    "ideal_answer": "By default the worker sets `host=\"redis\"`, relying on Kube-DNS to resolve the Redis service name, and creates the queue with `rediswq.RedisWQ(name=\"job2\", host=host)`. If Kube-DNS is not working, uncomment the two lines `import os` and `host = os.getenv(\"REDIS_SERVICE_HOST\")` so the host is read from the REDIS_SERVICE_HOST environment variable instead. On startup the worker also prints its session ID (`q.sessionID()`) and the initial queue state (`empty=` followed by whether the queue is empty).",
+    "source": "parallel_work_queue.txt"
+  },
+  {
+    "id": "k010",
+    "query": "What are alternatives to using a Kubernetes Job with a work queue for background processing?",
+    "ideal_answer": "If you have a continuous stream of background processing work to run, consider running your background workers with a ReplicaSet instead of a Job. You can also consider using a background processing library such as Resque (https://github.com/resque/resque).",
+    "source": "parallel_work_queue.txt"
+  },
+  {
+    "id": "k001",
+    "query": "What is Kubernetes autoscaling, and what are the two main types covered in the HPA and VPA guide?",
+    "ideal_answer": "Autoscaling in Kubernetes ensures that your application can handle varying loads by automatically adjusting the number of running pods or the resources allocated to them. This dynamic adjustment is crucial for maintaining application performance, optimizing resource usage, and reducing operational costs. The guide covers two main types: Horizontal Pod Autoscaling (HPA) and Vertical Pod Autoscaling (VPA). It is titled 'A Hands-On Guide to Kubernetes Horizontal & Vertical Pod Autoscalers', written by Anvesh Muppeda, published on Jun 3, 2024 (11 min read), and includes a practical example for each.",
+    "source": "pods_autoscale.html"
+  },
+  {
+    "id": "k002",
+    "query": "Why do I need Metrics Server before testing HPA or VPA, and how do I install it?",
+    "ideal_answer": "The Metrics Server must be installed in the cluster before testing HPA and VPA because it collects resource usage metrics from the cluster's nodes and pods, which are necessary for autoscaling decisions. It can be installed using either a YAML manifest or the official Helm chart. To install the latest release from the YAML manifest, run `kubectl apply -f https://github.com/kubernetes-sigs/metrics-server/releases/latest/download/components.yaml`. This fetches the manifest for the latest release from the Metrics Server GitHub repository and applies it to your cluster.",
+    "source": "pods_autoscale.html"
+  },
+  {
+    "id": "k003",
+    "query": "How can I check that Metrics Server is collecting metrics after installation?",
+    "ideal_answer": "First verify that the Metrics Server pods are running successfully in the kube-system namespace with `kubectl get pods -n kube-system | grep metrics-server`; you should see Metrics Server pods running and ready. Then confirm that metrics are being collected by querying the API for CPU and memory usage with `kubectl top nodes` and `kubectl top pods --all-namespaces`. If the Metrics Server is installed and working properly, you will see CPU and memory usage for the nodes and pods in your cluster, and you can then proceed to test HPA and VPA.",
+    "source": "pods_autoscale.html"
+  },
+  {
+    "id": "k004",
+    "query": "What is Horizontal Pod Autoscaling (HPA), and how does it work?",
+    "ideal_answer": "Horizontal Pod Autoscaling (HPA) automatically scales the number of pods in a replication controller, deployment, or replica set based on observed CPU utilization (or other selected metrics). It lets your application scale out (add pods) or scale in (reduce pods) in response to load changes. HPA works in three stages: it monitors the specified metrics (such as CPU usage, memory usage or custom metrics), evaluates them by comparing current values against predefined thresholds, and scales pods, increasing the number of pods if the values exceed the thresholds and decreasing it if they drop below.",
+    "source": "pods_autoscale.html"
+  },
+  {
+    "id": "k005",
+    "query": "HPA ke advantages kya hain?",
+    "ideal_answer": "The advantages of HPA are: Elasticity, because it automatically adjusts the number of pods to meet current demand; Cost-Efficiency, because it optimizes resource usage by adding or removing pods as needed; and Performance, because it helps maintain application performance during high traffic periods.",
+    "source": "pods_autoscale.html"
+  },
+  {
+    "id": "k006",
+    "query": "What are the steps and manifests for creating the example nginx Deployment and Service for the HPA demo?",
+    "ideal_answer": "Step 1 creates a Deployment from hpa-deployment.yaml: apiVersion apps/v1, kind Deployment, name hpa-deploy, replicas 1, selector matching label app: nginx, and a container named nginx using the nginx image with resource requests of cpu 25m and limits of cpu 200m. It is applied with `kubectl apply -f hpa-deployment.yaml`. Step 2 creates a Service from nginx-service.yaml: apiVersion v1, kind Service, name nginx-svc, label app: nginx, port 80, and selector app: nginx. It is applied with `kubectl apply -f nginx-service.yaml`.",
+    "source": "pods_autoscale.html"
+  },
+  {
+    "id": "k007",
+    "query": "How do I configure the HorizontalPodAutoscaler for the nginx Deployment?",
+    "ideal_answer": "Create hpa.yaml with apiVersion autoscaling/v2 and kind HorizontalPodAutoscaler named nginx-hpa. The scaleTargetRef points to the Deployment hpa-deploy (apiVersion apps/v1), minReplicas is 1 and maxReplicas is 10. The metrics section uses type Resource on the cpu resource with a target of type Utilization and averageUtilization 50. Apply it with `kubectl apply -f hpa.yaml`. With this setup, the HPA scales the nginx pods between 1 and 10 based on CPU utilization, aiming to keep it around 50%.",
+    "source": "pods_autoscale.html"
+  },
+  {
+    "id": "k008",
+    "query": "How do I test HPA by generating load and watching it scale?",
+    "ideal_answer": "Increase the load on the hpa-deploy deployment by creating a load-generator pod: `kubectl run -i --tty load-generator --rm --image=busybox:1.28 --restart=Never -- /bin/sh -c \"while sleep 0.01; do wget -q -O- http://nginx-svc; done\"`. This continuously sends requests to the nginx-svc service, raising the CPU utilization of the nginx pods. Before the load, `kubectl top po` shows the single hpa-deploy pod at 0m CPU and 2Mi memory. Afterwards, use `kubectl top po` to check pod CPU and `kubectl get hpa -w` to monitor the HPA. In the example, the HPA target went from 0%/50% to 80%/50%, the replicas increased from 1 to 2, and utilization then dropped to 68%, 54% and 42% against the 50% target. This validates that the HPA scales the application dynamically based on CPU utilization.",
+    "source": "pods_autoscale.html"
+  },
+  {
+    "id": "k009",
+    "query": "What is Vertical Pod Autoscaling (VPA), and how does it work?",
+    "ideal_answer": "Vertical Pod Autoscaling (VPA) adjusts the CPU and memory resource requests and limits for your pods. Instead of adding more pods, VPA modifies the resources allocated to existing pods. It works in three stages: monitoring resource usage (continuously watching the CPU and memory usage of pods), recommending resources (suggesting adjustments based on usage patterns), and applying changes (it can automatically apply the recommended changes to the pod specifications, typically requiring a pod restart).",
+    "source": "pods_autoscale.html"
+  },
+  {
+    "id": "k010",
+    "query": "VPA use karne ke kya fayde hain?",
+    "ideal_answer": "The advantages of VPA are: Resource Optimization, because it ensures pods have the right amount of resources and prevents over-provisioning or under-provisioning; Simplified Resource Management, because it reduces the need to manually adjust resource requests and limits; and Improved Performance, because it helps maintain application performance by dynamically adjusting resources based on actual usage.",
+    "source": "pods_autoscale.html"
+  },
+  {
+    "id": "k011",
+    "query": "How does VPA adjust resources over time based on observed usage?",
+    "ideal_answer": "VPA adjusts resources in three phases. First, the initial adjustment: when VPA starts managing a pod, it ensures the pod's resource requests are within the specified minAllowed and maxAllowed ranges. In the example, minAllowed CPU is 100m, so VPA initially raises the pod's CPU request to at least 100m to give it a minimum baseline. Second, ongoing monitoring and adjustment: VPA keeps monitoring CPU and memory usage and collects data over time to understand utilization patterns and make better-informed recommendations. Third, recommendation based on observed usage: VPA does not immediately jump to maxAllowed unless observed usage justifies it; it adjusts requests incrementally to align closely with actual usage patterns.",
+    "source": "pods_autoscale.html"
+  },
+  {
+    "id": "k012",
+    "query": "How do I install Vertical Pod Autoscaler in my Kubernetes cluster?",
+    "ideal_answer": "Before creating VPA objects, install VPA in the cluster. Clone the source with `git clone https://github.com/kubernetes/autoscaler.git`, change into the directory with `cd autoscaler`, and run the installation script with `./hack/vpa-up.sh`. The script installs the VPA components, including custom resources, controllers and other required resources, into the cluster. Verify the installation with `kubectl get pods -n kube-system | grep vpa`; you should see VPA-related pods running in the kube-system namespace.",
+    "source": "pods_autoscale.html"
+  },
+  {
+    "id": "k013",
+    "query": "What does the example VPA Deployment look like, and what does it do?",
+    "ideal_answer": "vpa-deployment.yaml defines a Deployment named high-cpu-utilization-deployment with 2 replicas, selector label app: cpu-utilization-app, and a container named cpu-utilization-container using the ubuntu image. Its command runs `/bin/sh -c \"apt-get update && apt-get install -y stress-ng && while true; do stress-ng --cpu 1; done\"`. Resources are set to a CPU limit of 0.05 and a CPU request of 0.05. The deployment repeatedly runs a CPU stress test with the stress-ng tool, consuming a small but continuous amount of CPU (limited to 0.05 cores) to simulate high CPU utilization. It is applied with `kubectl apply -f vpa-deployment.yaml`.",
+    "source": "pods_autoscale.html"
+  },
+  {
+    "id": "k014",
+    "query": "How do I configure a VerticalPodAutoscaler, and what update modes can I use?",
+    "ideal_answer": "vpa.yaml uses apiVersion autoscaling.k8s.io/v1 and kind VerticalPodAutoscaler named stress-vpa. The targetRef points to the Deployment high-cpu-utilization-deployment, updatePolicy.updateMode is Auto, and resourcePolicy.containerPolicies applies to all containers (containerName '*') with minAllowed cpu 100m and memory 50Mi, maxAllowed cpu 200m and memory 500Mi, and controlledResources cpu and memory. maxAllowed is the maximum VPA will allocate even if demand is higher. Valid updateMode options are: Off, where VPA only provides recommendations and does not automatically change resource requirements; Initial, where VPA only assigns resource requests at pod creation and never changes them later; Recreate, where VPA assigns requests at creation and updates existing pods by evicting and recreating them; and Auto, which recreates the pod based on the recommendation. Using updateMode Auto lets the scaling be applied automatically instead of manually. The VPA keeps resources within 100m-200m CPU and 50Mi-500Mi memory for all containers. Apply it with `kubectl apply -f vpa.yaml`.",
+    "source": "pods_autoscale.html"
+  },
+  {
+    "id": "k015",
+    "query": "How do I test VPA, and what happens to Pod CPU requests after it starts?",
+    "ideal_answer": "First check the initial utilization with `kubectl top po`: both target pods use 50m CPU (13Mi and 9Mi memory), and `kubectl get po -o jsonpath='{.items[*].spec.containers[*].resources.requests.cpu}'` shows requests of 50m 50m, meaning the pods are consuming their maximum CPU request because load is being generated. Next, `kubectl get vpa` shows stress-vpa in Auto mode with a CPU recommendation of 100m, memory of 262144k, and PROVIDED True. After waiting, the pods have been recreated (new pod names, restarts 0, ages of about 66s and 2m6s), the CPU requests now read 100m 100m, and `kubectl top po` shows about 101m and 100m CPU. The pods were restarted and their CPU requests increased from 50m to 100m because of the VPA's minAllowed setting. VPA then continues to raise the request toward the recommended value, up to a maximum of 200m, as needed.",
+    "source": "pods_autoscale.html"
+  },
+  {
+    "id": "k016",
+    "query": "Why did VPA increase the CPU request to 126m instead of 200m?",
+    "ideal_answer": "The CPU request rose to 126m (pods using about 127m, with later readings of 163m) rather than 200m for three reasons. Observed usage: the recommendation is based on actual container usage, and VPA aims to provide just enough resources to meet demand without over-provisioning, so 126m indicated the current needs. Incremental adjustments: VPA gradually increases requests to avoid sudden large changes that might disrupt the application, ensuring stability and efficiency. Efficiency and limits: maxAllowed (200m) is a ceiling rather than a target, and VPA only raises the request to 200m if observed usage shows it is necessary; here the usage suggested 126m was adequate. With this setup, VPA automatically adjusts CPU and memory requests for the deployment, aiming to keep resource usage within the specified limits.",
+    "source": "pods_autoscale.html"
+  },
+  {
+    "id": "k017",
+    "query": "Kisi specific container ko VPA scaling se exclude kaise karein?",
+    "ideal_answer": "To exclude a specific container in a pod managed by the VerticalPodAutoscaler from scaling, set that container's mode to \"Off\" in the resourcePolicy. In the VPA spec, under resourcePolicy.containerPolicies, add an entry with `containerName: <container_name>` and `mode: \"Off\"`. Here <container_name> is the name of the container you want to exclude, and mode \"Off\" tells VPA not to apply any autoscaling actions to it, so VPA does not adjust that container's resource requests. This lets only chosen containers be autoscaled while others stay unaffected, allowing you to fine-tune scaling behavior for your workload.",
+    "source": "pods_autoscale.html"
+  },
+  {
+    "id": "k018",
+    "query": "HPA vs VPA: which should I use?",
+    "ideal_answer": "The choice depends on your application's requirements. HPA is ideal for stateless applications that can easily scale horizontally by adding more pods; it is useful for variable workloads and for ensuring high availability. VPA is suitable for applications where scaling horizontally is not feasible, or when you need to optimize resource usage for individual pods; it is beneficial for stateful applications or those with varying resource needs.",
+    "source": "pods_autoscale.html"
+  },
+  {
+    "id": "k019",
+    "query": "What is the main conclusion of the HPA and VPA guide, and where can I find its source code or send feedback?",
+    "ideal_answer": "The conclusion is that Kubernetes autoscaling through HPA and VPA provides robust mechanisms to manage application scalability and resource optimization. By understanding and implementing these strategies, you can ensure your applications are resilient, performant, and cost-effective. The author invites readers to explore the GitHub repository with the source code for Kubernetes, and to open an issue there if they hit problems or have ideas for improvement. The author also invites readers to connect on LinkedIn to discuss AWS, cloud strategies, Kubernetes and related topics, and closes with 'Happy deploying!' and 'Happy Kubernetings!'.",
+    "source": "pods_autoscale.html"
+  }
+]
