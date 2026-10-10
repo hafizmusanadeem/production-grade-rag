@@ -39,7 +39,7 @@ pdfplumber                  # Fallback PDF parser for scanned/complex layouts
 
 # --- OBSERVABILITY & DISTRIBUTED TRACING ---
 langsmith                   # Specialized tracing for LangChain/LangGraph
-logfire[fastapi,requests]   # Pydantic Logfire — FastAPI + requests instrumentation
+logfire[fastapi,requests,httpx,system-metrics]   # Pydantic Logfire — FastAPI + requests instrumentation
 loguru                      # Enhanced logging for Python
 
 # --- GUARDRAILS ---
