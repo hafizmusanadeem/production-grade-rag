@@ -10,18 +10,19 @@ Usage:
 
 import argparse
 import json
+import logfire
 import sys
 from dataclasses import asdict, dataclass
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Optional
 
-import logfire
-
+from app.observability import configure_logfire
 from app.config import settings, validate_env_vars
 from app.ingestion.processor import IngestionProcessor
 
 
+configure_logfire()
 @dataclass
 class ProcessingStats:
     """Statistics for a single file processing attempt."""
