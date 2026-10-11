@@ -13,17 +13,15 @@ def retrieve_node(state: AgentState):
     query = state["current_query"]
 
     with logfire.span("Knowledge Retrieval"):
-        logfire.info(f"Searching Qdrant for: {query}")
+        logfire.info("Searching Qdrant for", query=query)
         raw_results = search_qdrant(query= query, limit_k= 15)
-        logfire.info(f"Retrieved {len(raw_results)} candidates from Vector DB (Qdrant)")
-
-        doc_contents = [doc.page_content for doc in raw_results]
+        logfire.info("Retrieved candidates from Vector DB",candidate_count=len(raw_results),vector_db="Qdrant")
 
         with logfire.span("Semantic Reranking"):
-            reranked_contents = rerank_documents(query= query, documents= doc_contents, top_n= 5)
-            logfire.info("Reranking complete. Kept top 5 most relevant chunks")
+            reranked_contents = rerank_documents(query= query, documents= raw_results, top_n= 5)
+            logfire.info("Reranking complete. Kept top 5 most relevant chunks", reranked_count=len(reranked_contents))
 
-        formatted_docs = [f"CONTENT: {doc}" for doc in reranked_contents]
+        formatted_docs = [f"CONTENT: {doc.page_content}" for doc in reranked_contents]
 
     return {
         "documents": formatted_docs,

@@ -606,277 +606,277 @@
     "source": "architecture.pptx"
   },
   {
-    "id": "g001",
+    "id": "k102",
     "query": "What is a Kubernetes Job and what do restartPolicy and backoffLimit mean in the hello-job config?",
     "ideal_answer": "A Kubernetes Job is a controller that creates one or more pods and ensures they successfully terminate. Jobs are useful for batch processes, one-time tasks, or any task that should run to completion rather than indefinitely. In the hello-job example (apiVersion batch/v1, kind Job), the container uses the busybox:1.28 image and runs a command that prints \"Hello, Kubernetes!\" and then sleeps for 5 seconds. The restartPolicy is Never, meaning the container won't be restarted after completion. The backoffLimit is 4, meaning the job will retry up to 4 times if it fails.",
     "source": "monitor_job.docx"
   },
   {
-    "id": "g002",
+    "id": "k103",
     "query": "What do the columns in kubectl get jobs mean, and what does 0/1 in COMPLETIONS mean?",
     "ideal_answer": "Running `kubectl get jobs` shows four columns. NAME is the name of the job. COMPLETIONS is the number of completed pods divided by the desired completions (for example 1/1). DURATION is how long the job took to run. AGE is how long it has been since the job was created. If a job shows 0/1 under COMPLETIONS, it might still be running or it has failed, so you should wait a few seconds and run the command again.",
     "source": "monitor_job.docx"
   },
   {
-    "id": "g003",
+    "id": "k104",
     "query": "How do I find the Pods created by a Job and view their logs after the Job finishes?",
     "ideal_answer": "Each job creates one or more pods whose names include the job name and a random suffix. You can list pods with `kubectl get pods --show-labels` and look for labels like job-name=hello-job or job-name=long-job, or filter directly with `kubectl get pods -l job-name=<job-name>`. Then view the logs with `kubectl logs <pod-name>`. For hello-job's pod (for example hello-job-abcd1) this prints \"Hello, Kubernetes!\", and for long-job it prints \"Starting long job...\" followed by \"Long job completed!\". You can view logs even after the job has completed, which is very useful for debugging and auditing purposes.",
     "source": "monitor_job.docx"
   },
   {
-    "id": "g004",
+    "id": "k105",
     "query": "How can I stream the logs of a running job in real time?",
     "ideal_answer": "Use the -f flag with the logs command: `kubectl logs -f <pod-name>`. This follows the logs of a running job as the output is produced, and is particularly useful for longer-running jobs where you want to see the output as it happens. In the counter-job example, which prints a count from 1 to 5 with a 5-second sleep between each, you first find the pod with `kubectl get pods -l job-name=counter-job` and then follow it, seeing the count increment every 5 seconds. Press Ctrl+C to stop following the logs.",
     "source": "monitor_job.docx"
   },
   {
-    "id": "g005",
+    "id": "k106",
     "query": "How do I use labels to organize and filter Kubernetes jobs?",
     "ideal_answer": "Labels are key-value pairs that can be attached to Kubernetes resources and are useful for organizing and selecting subsets of resources. You add them under metadata.labels in the job YAML; the example labeled-job uses department: engineering, app: demo, and environment: training. You can then filter with `kubectl get jobs -l department=engineering`, which shows only jobs with that label. For more specific filtering, combine multiple labels separated by a comma, for example `kubectl get jobs -l department=engineering,environment=training`.",
     "source": "monitor_job.docx"
   },
   {
-    "id": "g006",
+    "id": "k107",
     "query": "What will I learn from this tutorial about monitoring Kubernetes Jobs and logs?",
     "ideal_answer": "Kubernetes is a container orchestration platform, and its job management system lets you run batch-oriented workloads to completion. The tutorial teaches you to monitor the status of Kubernetes jobs and analyze their logs. By the end you can set up a Kubernetes environment using Minikube, create jobs with various configurations, monitor job status using kubectl get and kubectl describe, access and analyze job logs using kubectl logs, use advanced techniques like labels, events, and JSONPath for more effective monitoring, and create scheduled jobs using CronJobs. As next topics it suggests resource management, job parallelism, and integrating with external monitoring solutions like Prometheus and Grafana.",
     "source": "monitor_job.docx"
   },
   {
-    "id": "g007",
+    "id": "k108",
     "query": "How do I install and start Minikube for a local Kubernetes cluster?",
     "ideal_answer": "Minikube creates a single-node Kubernetes cluster on your local machine. It is typically pre-installed on many lab environments, so you verify the installation with `minikube version`, which prints output like minikube version: v1.29.0 along with a commit hash. Start the cluster with `minikube start --driver=docker`. This takes a few minutes while Minikube downloads the necessary components and starts the cluster. When it completes you see a message saying kubectl is now configured to use the \"minikube\" cluster and the \"default\" namespace by default.",
     "source": "monitor_job.docx"
   },
   {
-    "id": "g008",
+    "id": "k109",
     "query": "How can I check that my Kubernetes cluster is running correctly?",
     "ideal_answer": "Run `kubectl get nodes` to check the node status. You should see a node named minikube with STATUS Ready, ROLES control-plane, and a version such as v1.26.3. You should also check that the core Kubernetes components are running with `kubectl get pods -n kube-system`, which should show several running pods including kube-apiserver, kube-controller-manager, and others. Once the cluster is running, you are ready to create and monitor jobs.",
     "source": "monitor_job.docx"
   },
   {
-    "id": "g009",
+    "id": "k110",
     "query": "How do I create the hello-job in the cluster from the YAML file?",
     "ideal_answer": "First create a file called hello-job.yaml in your project directory (cd ~/project, then nano hello-job.yaml), paste in the job YAML, save with Ctrl+O then Enter, and exit nano with Ctrl+X. Then create the job with `kubectl apply -f hello-job.yaml`. You should see the output job.batch/hello-job created, which confirms the job has been created.",
     "source": "monitor_job.docx"
   },
   {
-    "id": "g010",
+    "id": "k111",
     "query": "What information does kubectl describe job show, and where can I find the Job's events?",
     "ideal_answer": "`kubectl describe job hello-job` provides extensive information about a job, including labels and annotations, selector details, parallelism and completion requirements, pod statuses, and events related to the job. You should look at the Events section at the bottom, which shows important events such as pod creation and completion.",
     "source": "monitor_job.docx"
   },
   {
-    "id": "g011",
+    "id": "k112",
     "query": "What statuses can a Kubernetes Job have, and how do I check whether its Pod completed?",
     "ideal_answer": "A job can have several statuses. Active means the job is still running. Completed means the job has completed successfully. Failed means the job has failed after reaching its backoff limit. To check whether a job's pod has completed, run `kubectl get pods`. A finished pod such as hello-job-abcd1 shows READY 0/1, STATUS Completed, and RESTARTS 0. The Completed value in the STATUS column indicates that the job ran successfully.",
     "source": "monitor_job.docx"
   },
   {
-    "id": "g012",
+    "id": "k113",
     "query": "How can I observe a job in the Active state with a job that takes longer to run?",
     "ideal_answer": "Create a job such as long-job, defined in long-job.yaml with the busybox:1.28 image, a command that prints \"Starting long job...\", sleeps for 30 seconds, and then prints \"Long job completed!\", with restartPolicy Never and backoffLimit 4. Create it with `kubectl apply -f long-job.yaml` and immediately run `kubectl get jobs`. You will see long-job with 0/1 completions because it is still running. If you keep checking every few seconds, it changes to 1/1 after about 30 seconds. This demonstrates how you can monitor the progress of your jobs in real time using kubectl.",
     "source": "monitor_job.docx"
   },
   {
-    "id": "g013",
+    "id": "k114",
     "query": "How do I view Kubernetes events for my jobs?",
     "ideal_answer": "Kubernetes generates events for various state changes in your jobs, and these provide valuable information about the lifecycle of the jobs. Run `kubectl get events --sort-by=.metadata.creationTimestamp` to show all events in your namespace sorted by time. To filter for events related to a specific job, use `kubectl get events --field-selector involvedObject.name=labeled-job`. These events help you understand when and why jobs were created, started, or encountered issues.",
     "source": "monitor_job.docx"
   },
   {
-    "id": "g014",
+    "id": "k115",
     "query": "How can I use JSONPath to extract specific fields from kubectl output?",
     "ideal_answer": "Kubernetes allows you to use JSONPath to extract specific fields from the output of kubectl commands, which is useful for focusing on particular aspects of your jobs. For example, `kubectl get job labeled-job -o jsonpath='{.status.succeeded}'` outputs the number of succeeded pods for the labeled-job. To get the creation time of a job, use `kubectl get job labeled-job -o jsonpath='{.metadata.creationTimestamp}'`.",
     "source": "monitor_job.docx"
   },
   {
-    "id": "g015",
+    "id": "k116",
     "query": "How do I create a CronJob that runs on a schedule, then check its Jobs and logs?",
     "ideal_answer": "Kubernetes provides CronJobs for tasks that need to run on a schedule. The CronJob YAML uses apiVersion batch/v1 and kind CronJob, with a schedule such as \"*/1 * * * *\" (run every minute) and a jobTemplate containing the pod spec; in the example the container uses busybox:1.28 to print the date and \"Hello from CronJob\", with restartPolicy Never. Create it with `kubectl apply -f simple-cronjob.yaml` and check it with `kubectl get cronjobs`, which shows NAME, SCHEDULE, SUSPEND, ACTIVE, LAST SCHEDULE, and AGE. After a minute or two, `kubectl get jobs` shows jobs named like simple-cronjob-<timestamp>. To view the logs of the most recent execution, find the pod with `kubectl get pods --sort-by=.metadata.creationTimestamp` and then run `kubectl logs <latest-cronjob-pod>`. The same monitoring techniques apply to CronJobs.",
     "source": "monitor_job.docx"
   },
   {
-    "id": "g016",
+    "id": "k117",
     "query": "How do I clean up the Jobs and CronJob I created?",
     "ideal_answer": "Delete the jobs with `kubectl delete job hello-job long-job failed-job counter-job labeled-job` and delete the CronJob with `kubectl delete cronjob simple-cronjob`. This removes all the jobs and the CronJob from your cluster.",
     "source": "monitor_job.docx"
   },
   {
-    "id": "g017",
+    "id": "k118",
     "query": "How do I create and troubleshoot a Kubernetes Job that fails?",
     "ideal_answer": "The failed-job example uses busybox:1.28 with a command that prints \"Attempting task...\" and then runs `exit 1`, so it always exits with status code 1, which indicates failure. It has restartPolicy Never and backoffLimit 2. Create it with `kubectl apply -f failed-job.yaml`, wait a few moments for it to attempt and fail up to the backoff limit, then check `kubectl get jobs failed-job`, which shows 0/1 completions. Running `kubectl get pods -l job-name=failed-job` shows several pods, all in the Error state. Choose one and run `kubectl logs <failed-pod-name>`, which shows \"Attempting task...\". This shows the task started and then exited with an error code, which is crucial information for debugging job failures.",
     "source": "monitor_job.docx"
   },
   {
-    "id": "k001",
+    "id": "k119",
     "query": "How does the Kubernetes parallel work-queue example work?",
     "ideal_answer": "It is an example of running a Kubernetes Job that launches multiple parallel tasks as worker processes, each running as a separate Pod. As each pod is created, it picks up one unit of work from a task queue, processes it, and repeats until the end of the queue is reached. The overall steps are: start a storage service to hold the work queue (Redis is used), create a queue and fill it with messages, and start a Job that works on tasks from the queue. The reference documentation is at https://kubernetes.io/docs/tasks/job/fine-parallel-processing-work-queue/.",
     "source": "parallel_work_queue.txt"
   },
   {
-    "id": "k002",
+    "id": "k120",
     "query": "How do I fill the Redis queue with tasks for the Kubernetes work queue Job?",
     "ideal_answer": "Start a temporary interactive pod for running the Redis CLI with `kubectl run -i --tty temp --image redis --command \"/bin/sh\"`. Once the prompt appears, connect to Redis using `redis-cli -h redis`. Then push items onto the queue named \"job2\" using `rpush job2 \"<item>\"` for each task (the example pushes apple, banana, cherry, date, fig, grape, lemon, melon and orange). You can verify the queue contents with `lrange job2 0 -1`.",
     "source": "parallel_work_queue.txt"
   },
   {
-    "id": "k003",
+    "id": "k121",
     "query": "How does the worker script know when to stop?",
     "ideal_answer": "The worker connects to the Redis work queue named \"job2\" using the rediswq library and loops with `while not q.empty()`. Inside the loop it leases an item with `q.lease(lease_secs=10, block=True, timeout=2)`. If an item is returned, it decodes and processes it (simulated with a 10-second sleep, which should be replaced by real work) and then calls `q.complete(item)`. If no item is returned, it prints \"Waiting for work\". When the queue is empty, the loop ends, it prints \"Queue empty, exiting\", and the worker exits. Exiting with success is how workers signal that the queue is empty.",
     "source": "parallel_work_queue.txt"
   },
   {
-    "id": "k004",
+    "id": "k122",
     "query": "kubernetes job.yaml me parallelism aur restartPolicy kya set karni hai work queue ke liye?",
     "ideal_answer": "The Job manifest (job.yaml) uses apiVersion batch/v1 and kind Job with the name job-wq-2. In its spec, `parallelism` is set to 2, meaning two worker pods run in parallel. The pod template has a container named \"c\" using the image you pushed to your registry (replace the placeholder `gcr.io/myproject/job-wq-2` with your own registry path), and `restartPolicy` is set to OnFailure. In this example each pod works on several items from the queue and then exits, signaling success when the queue is empty.",
     "source": "parallel_work_queue.txt"
   },
   {
-    "id": "k005",
+    "id": "k123",
     "query": "How do I run the work-queue Job, check its status, and view worker logs?",
     "ideal_answer": "Run the Job with `kubectl apply -f ./job.yaml`. Check on it with `kubectl describe jobs/job-wq-2`. To wait for it to finish, use `kubectl wait --for=condition=complete --timeout=300s job/job-wq-2`. To see the work being done, check a worker pod's logs with `kubectl logs pods/job-wq-2-xxxxx`, where xxxxx is the pod's suffix.",
     "source": "parallel_work_queue.txt"
   },
   {
-    "id": "k006",
+    "id": "k124",
     "query": "What do I need before starting the Kubernetes parallel work-queue example?",
     "ideal_answer": "You need a running Kubernetes cluster with the kubectl command-line tool configured to talk to it. You also need a container image registry, such as Docker Hub, where you can upload the images that will run in your cluster.",
     "source": "parallel_work_queue.txt"
   },
   {
-    "id": "k007",
+    "id": "k125",
     "query": "How do I start Redis for the Kubernetes work-queue example?",
     "ideal_answer": "For this example you start a single instance of Redis by applying two manifests: `kubectl apply -f https://k8s.io/examples/application/job/redis/redis-pod.yaml` to create the Redis pod, and `kubectl apply -f https://k8s.io/examples/application/job/redis/redis-service.yaml` to create the Redis service. Redis acts as the storage service that holds the work queue.",
     "source": "parallel_work_queue.txt"
   },
   {
-    "id": "k008",
+    "id": "k126",
     "query": "How do I build and push the worker container image for the work-queue Job?",
     "ideal_answer": "The worker is a Python program (worker.py) that reads from the queue. Build the image with Docker using `docker build -t job-wq-2 .`. Then tag it with your registry username using `docker tag job-wq-2 <username>/job-wq-2` and push it with `docker push <username>/job-wq-2`, replacing <username> with your Hub username. The image path you push to is the one you then put in the Job manifest.",
     "source": "parallel_work_queue.txt"
   },
   {
-    "id": "k009",
+    "id": "k127",
     "query": "How does worker.py find the Redis host, and what can I do if Kube-DNS is not working?",
     "ideal_answer": "By default the worker sets `host=\"redis\"`, relying on Kube-DNS to resolve the Redis service name, and creates the queue with `rediswq.RedisWQ(name=\"job2\", host=host)`. If Kube-DNS is not working, uncomment the two lines `import os` and `host = os.getenv(\"REDIS_SERVICE_HOST\")` so the host is read from the REDIS_SERVICE_HOST environment variable instead. On startup the worker also prints its session ID (`q.sessionID()`) and the initial queue state (`empty=` followed by whether the queue is empty).",
     "source": "parallel_work_queue.txt"
   },
   {
-    "id": "k010",
+    "id": "k128",
     "query": "What are alternatives to using a Kubernetes Job with a work queue for background processing?",
     "ideal_answer": "If you have a continuous stream of background processing work to run, consider running your background workers with a ReplicaSet instead of a Job. You can also consider using a background processing library such as Resque (https://github.com/resque/resque).",
     "source": "parallel_work_queue.txt"
   },
   {
-    "id": "k001",
+    "id": "k129",
     "query": "What is Kubernetes autoscaling, and what are the two main types covered in the HPA and VPA guide?",
     "ideal_answer": "Autoscaling in Kubernetes ensures that your application can handle varying loads by automatically adjusting the number of running pods or the resources allocated to them. This dynamic adjustment is crucial for maintaining application performance, optimizing resource usage, and reducing operational costs. The guide covers two main types: Horizontal Pod Autoscaling (HPA) and Vertical Pod Autoscaling (VPA). It is titled 'A Hands-On Guide to Kubernetes Horizontal & Vertical Pod Autoscalers', written by Anvesh Muppeda, published on Jun 3, 2024 (11 min read), and includes a practical example for each.",
     "source": "pods_autoscale.html"
   },
   {
-    "id": "k002",
+    "id": "k130",
     "query": "Why do I need Metrics Server before testing HPA or VPA, and how do I install it?",
     "ideal_answer": "The Metrics Server must be installed in the cluster before testing HPA and VPA because it collects resource usage metrics from the cluster's nodes and pods, which are necessary for autoscaling decisions. It can be installed using either a YAML manifest or the official Helm chart. To install the latest release from the YAML manifest, run `kubectl apply -f https://github.com/kubernetes-sigs/metrics-server/releases/latest/download/components.yaml`. This fetches the manifest for the latest release from the Metrics Server GitHub repository and applies it to your cluster.",
     "source": "pods_autoscale.html"
   },
   {
-    "id": "k003",
+    "id": "k131",
     "query": "How can I check that Metrics Server is collecting metrics after installation?",
     "ideal_answer": "First verify that the Metrics Server pods are running successfully in the kube-system namespace with `kubectl get pods -n kube-system | grep metrics-server`; you should see Metrics Server pods running and ready. Then confirm that metrics are being collected by querying the API for CPU and memory usage with `kubectl top nodes` and `kubectl top pods --all-namespaces`. If the Metrics Server is installed and working properly, you will see CPU and memory usage for the nodes and pods in your cluster, and you can then proceed to test HPA and VPA.",
     "source": "pods_autoscale.html"
   },
   {
-    "id": "k004",
+    "id": "k132",
     "query": "What is Horizontal Pod Autoscaling (HPA), and how does it work?",
     "ideal_answer": "Horizontal Pod Autoscaling (HPA) automatically scales the number of pods in a replication controller, deployment, or replica set based on observed CPU utilization (or other selected metrics). It lets your application scale out (add pods) or scale in (reduce pods) in response to load changes. HPA works in three stages: it monitors the specified metrics (such as CPU usage, memory usage or custom metrics), evaluates them by comparing current values against predefined thresholds, and scales pods, increasing the number of pods if the values exceed the thresholds and decreasing it if they drop below.",
     "source": "pods_autoscale.html"
   },
   {
-    "id": "k005",
+    "id": "k133",
     "query": "HPA ke advantages kya hain?",
     "ideal_answer": "The advantages of HPA are: Elasticity, because it automatically adjusts the number of pods to meet current demand; Cost-Efficiency, because it optimizes resource usage by adding or removing pods as needed; and Performance, because it helps maintain application performance during high traffic periods.",
     "source": "pods_autoscale.html"
   },
   {
-    "id": "k006",
+    "id": "k134",
     "query": "What are the steps and manifests for creating the example nginx Deployment and Service for the HPA demo?",
     "ideal_answer": "Step 1 creates a Deployment from hpa-deployment.yaml: apiVersion apps/v1, kind Deployment, name hpa-deploy, replicas 1, selector matching label app: nginx, and a container named nginx using the nginx image with resource requests of cpu 25m and limits of cpu 200m. It is applied with `kubectl apply -f hpa-deployment.yaml`. Step 2 creates a Service from nginx-service.yaml: apiVersion v1, kind Service, name nginx-svc, label app: nginx, port 80, and selector app: nginx. It is applied with `kubectl apply -f nginx-service.yaml`.",
     "source": "pods_autoscale.html"
   },
   {
-    "id": "k007",
+    "id": "k135",
     "query": "How do I configure the HorizontalPodAutoscaler for the nginx Deployment?",
     "ideal_answer": "Create hpa.yaml with apiVersion autoscaling/v2 and kind HorizontalPodAutoscaler named nginx-hpa. The scaleTargetRef points to the Deployment hpa-deploy (apiVersion apps/v1), minReplicas is 1 and maxReplicas is 10. The metrics section uses type Resource on the cpu resource with a target of type Utilization and averageUtilization 50. Apply it with `kubectl apply -f hpa.yaml`. With this setup, the HPA scales the nginx pods between 1 and 10 based on CPU utilization, aiming to keep it around 50%.",
     "source": "pods_autoscale.html"
   },
   {
-    "id": "k008",
+    "id": "k136",
     "query": "How do I test HPA by generating load and watching it scale?",
     "ideal_answer": "Increase the load on the hpa-deploy deployment by creating a load-generator pod: `kubectl run -i --tty load-generator --rm --image=busybox:1.28 --restart=Never -- /bin/sh -c \"while sleep 0.01; do wget -q -O- http://nginx-svc; done\"`. This continuously sends requests to the nginx-svc service, raising the CPU utilization of the nginx pods. Before the load, `kubectl top po` shows the single hpa-deploy pod at 0m CPU and 2Mi memory. Afterwards, use `kubectl top po` to check pod CPU and `kubectl get hpa -w` to monitor the HPA. In the example, the HPA target went from 0%/50% to 80%/50%, the replicas increased from 1 to 2, and utilization then dropped to 68%, 54% and 42% against the 50% target. This validates that the HPA scales the application dynamically based on CPU utilization.",
     "source": "pods_autoscale.html"
   },
   {
-    "id": "k009",
+    "id": "k137",
     "query": "What is Vertical Pod Autoscaling (VPA), and how does it work?",
     "ideal_answer": "Vertical Pod Autoscaling (VPA) adjusts the CPU and memory resource requests and limits for your pods. Instead of adding more pods, VPA modifies the resources allocated to existing pods. It works in three stages: monitoring resource usage (continuously watching the CPU and memory usage of pods), recommending resources (suggesting adjustments based on usage patterns), and applying changes (it can automatically apply the recommended changes to the pod specifications, typically requiring a pod restart).",
     "source": "pods_autoscale.html"
   },
   {
-    "id": "k010",
+    "id": "k138",
     "query": "VPA use karne ke kya fayde hain?",
     "ideal_answer": "The advantages of VPA are: Resource Optimization, because it ensures pods have the right amount of resources and prevents over-provisioning or under-provisioning; Simplified Resource Management, because it reduces the need to manually adjust resource requests and limits; and Improved Performance, because it helps maintain application performance by dynamically adjusting resources based on actual usage.",
     "source": "pods_autoscale.html"
   },
   {
-    "id": "k011",
+    "id": "k139",
     "query": "How does VPA adjust resources over time based on observed usage?",
     "ideal_answer": "VPA adjusts resources in three phases. First, the initial adjustment: when VPA starts managing a pod, it ensures the pod's resource requests are within the specified minAllowed and maxAllowed ranges. In the example, minAllowed CPU is 100m, so VPA initially raises the pod's CPU request to at least 100m to give it a minimum baseline. Second, ongoing monitoring and adjustment: VPA keeps monitoring CPU and memory usage and collects data over time to understand utilization patterns and make better-informed recommendations. Third, recommendation based on observed usage: VPA does not immediately jump to maxAllowed unless observed usage justifies it; it adjusts requests incrementally to align closely with actual usage patterns.",
     "source": "pods_autoscale.html"
   },
   {
-    "id": "k012",
+    "id": "k140",
     "query": "How do I install Vertical Pod Autoscaler in my Kubernetes cluster?",
     "ideal_answer": "Before creating VPA objects, install VPA in the cluster. Clone the source with `git clone https://github.com/kubernetes/autoscaler.git`, change into the directory with `cd autoscaler`, and run the installation script with `./hack/vpa-up.sh`. The script installs the VPA components, including custom resources, controllers and other required resources, into the cluster. Verify the installation with `kubectl get pods -n kube-system | grep vpa`; you should see VPA-related pods running in the kube-system namespace.",
     "source": "pods_autoscale.html"
   },
   {
-    "id": "k013",
+    "id": "k141",
     "query": "What does the example VPA Deployment look like, and what does it do?",
     "ideal_answer": "vpa-deployment.yaml defines a Deployment named high-cpu-utilization-deployment with 2 replicas, selector label app: cpu-utilization-app, and a container named cpu-utilization-container using the ubuntu image. Its command runs `/bin/sh -c \"apt-get update && apt-get install -y stress-ng && while true; do stress-ng --cpu 1; done\"`. Resources are set to a CPU limit of 0.05 and a CPU request of 0.05. The deployment repeatedly runs a CPU stress test with the stress-ng tool, consuming a small but continuous amount of CPU (limited to 0.05 cores) to simulate high CPU utilization. It is applied with `kubectl apply -f vpa-deployment.yaml`.",
     "source": "pods_autoscale.html"
   },
   {
-    "id": "k014",
+    "id": "k142",
     "query": "How do I configure a VerticalPodAutoscaler, and what update modes can I use?",
     "ideal_answer": "vpa.yaml uses apiVersion autoscaling.k8s.io/v1 and kind VerticalPodAutoscaler named stress-vpa. The targetRef points to the Deployment high-cpu-utilization-deployment, updatePolicy.updateMode is Auto, and resourcePolicy.containerPolicies applies to all containers (containerName '*') with minAllowed cpu 100m and memory 50Mi, maxAllowed cpu 200m and memory 500Mi, and controlledResources cpu and memory. maxAllowed is the maximum VPA will allocate even if demand is higher. Valid updateMode options are: Off, where VPA only provides recommendations and does not automatically change resource requirements; Initial, where VPA only assigns resource requests at pod creation and never changes them later; Recreate, where VPA assigns requests at creation and updates existing pods by evicting and recreating them; and Auto, which recreates the pod based on the recommendation. Using updateMode Auto lets the scaling be applied automatically instead of manually. The VPA keeps resources within 100m-200m CPU and 50Mi-500Mi memory for all containers. Apply it with `kubectl apply -f vpa.yaml`.",
     "source": "pods_autoscale.html"
   },
   {
-    "id": "k015",
+    "id": "k143",
     "query": "How do I test VPA, and what happens to Pod CPU requests after it starts?",
     "ideal_answer": "First check the initial utilization with `kubectl top po`: both target pods use 50m CPU (13Mi and 9Mi memory), and `kubectl get po -o jsonpath='{.items[*].spec.containers[*].resources.requests.cpu}'` shows requests of 50m 50m, meaning the pods are consuming their maximum CPU request because load is being generated. Next, `kubectl get vpa` shows stress-vpa in Auto mode with a CPU recommendation of 100m, memory of 262144k, and PROVIDED True. After waiting, the pods have been recreated (new pod names, restarts 0, ages of about 66s and 2m6s), the CPU requests now read 100m 100m, and `kubectl top po` shows about 101m and 100m CPU. The pods were restarted and their CPU requests increased from 50m to 100m because of the VPA's minAllowed setting. VPA then continues to raise the request toward the recommended value, up to a maximum of 200m, as needed.",
     "source": "pods_autoscale.html"
   },
   {
-    "id": "k016",
+    "id": "k144",
     "query": "Why did VPA increase the CPU request to 126m instead of 200m?",
     "ideal_answer": "The CPU request rose to 126m (pods using about 127m, with later readings of 163m) rather than 200m for three reasons. Observed usage: the recommendation is based on actual container usage, and VPA aims to provide just enough resources to meet demand without over-provisioning, so 126m indicated the current needs. Incremental adjustments: VPA gradually increases requests to avoid sudden large changes that might disrupt the application, ensuring stability and efficiency. Efficiency and limits: maxAllowed (200m) is a ceiling rather than a target, and VPA only raises the request to 200m if observed usage shows it is necessary; here the usage suggested 126m was adequate. With this setup, VPA automatically adjusts CPU and memory requests for the deployment, aiming to keep resource usage within the specified limits.",
     "source": "pods_autoscale.html"
   },
   {
-    "id": "k017",
+    "id": "k145",
     "query": "Kisi specific container ko VPA scaling se exclude kaise karein?",
     "ideal_answer": "To exclude a specific container in a pod managed by the VerticalPodAutoscaler from scaling, set that container's mode to \"Off\" in the resourcePolicy. In the VPA spec, under resourcePolicy.containerPolicies, add an entry with `containerName: <container_name>` and `mode: \"Off\"`. Here <container_name> is the name of the container you want to exclude, and mode \"Off\" tells VPA not to apply any autoscaling actions to it, so VPA does not adjust that container's resource requests. This lets only chosen containers be autoscaled while others stay unaffected, allowing you to fine-tune scaling behavior for your workload.",
     "source": "pods_autoscale.html"
   },
   {
-    "id": "k018",
+    "id": "k146",
     "query": "HPA vs VPA: which should I use?",
     "ideal_answer": "The choice depends on your application's requirements. HPA is ideal for stateless applications that can easily scale horizontally by adding more pods; it is useful for variable workloads and for ensuring high availability. VPA is suitable for applications where scaling horizontally is not feasible, or when you need to optimize resource usage for individual pods; it is beneficial for stateful applications or those with varying resource needs.",
     "source": "pods_autoscale.html"
   },
   {
-    "id": "k019",
+    "id": "k147",
     "query": "What is the main conclusion of the HPA and VPA guide, and where can I find its source code or send feedback?",
     "ideal_answer": "The conclusion is that Kubernetes autoscaling through HPA and VPA provides robust mechanisms to manage application scalability and resource optimization. By understanding and implementing these strategies, you can ensure your applications are resilient, performant, and cost-effective. The author invites readers to explore the GitHub repository with the source code for Kubernetes, and to open an issue there if they hit problems or have ideas for improvement. The author also invites readers to connect on LinkedIn to discuss AWS, cloud strategies, Kubernetes and related topics, and closes with 'Happy deploying!' and 'Happy Kubernetings!'.",
     "source": "pods_autoscale.html"

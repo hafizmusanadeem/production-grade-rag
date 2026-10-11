@@ -1,21 +1,34 @@
 # eval_retriever.py
 from dotenv import load_dotenv
+from pathlib import Path
 
 from deepeval import evaluate
 from deepeval.test_case import LLMTestCase
 from deepeval.metrics import ContextualRecallMetric, ContextualPrecisionMetric
 
 from app.services.retrieval.retrieval_pipeline import RetrievalPipeline, QueryRequest
+from app.config import settings
 from evals.helper.deepeval_judge import OpenRouterJudge
 from evals.eval_files.eval_harness import load_goldens, summarize_by_metric, print_summary
 
 load_dotenv()
 
-GOLDEN_PATH = "goldens/retriever_goldens.json"
+current_dir = Path(__file__).resolve().parent.parent
+GOLDEN_PATH = current_dir / "goldens" / "retriever.json"
 JUDGE_MODEL = "openai/gpt-oss-20b:free"   
 judge = OpenRouterJudge(JUDGE_MODEL)
 THRESHOLD = 0.7
 
+
+class PipelineRetriever:
+    """Adapter: exposes RetrievalPipeline as .invoke(query) -> docs with .page_content."""
+    def __init__(self, limit_k: int = 10, top_n: int = 5):
+        self.pipeline = RetrievalPipeline()
+        self.limit_k, self.top_n = limit_k, top_n
+
+    def invoke(self, query: str):
+        req = QueryRequest(query = query, limit_k = self.limit_k, top_n = self.top_n)
+        return self.pipeline.process_query(req).results
 
 def run(retriever):
     # 1. LOAD the golden set --- the fixed, human-authored truth
@@ -50,9 +63,9 @@ def run(retriever):
         metrics=metrics,
         hyperparameters={
             "retriever": "reranker",          # vs "reranked" when you swap it in
-            "embedding_model": "text-embedding-3-large",
-            "chunk_size": 1000,
-            "chunk_overlap": 150,
+            "embedding_model": settings.GEMINI_EMBEDDING_MODEL,
+            "chunk_size": settings.CHUNK_SIZE,
+            "chunk_overlap": settings.CHUNK_OVERLAP,
             "top_k": 3,
             "judge_model": judge,
             "golden_set": GOLDEN_PATH,
@@ -63,7 +76,7 @@ def run(retriever):
 
 def run_local():
     """Standalone convenience: build the retriever, then run."""
-    return run(RerankingRetriever())
+    return run(PipelineRetriever())
 
 
 if __name__ == "__main__":

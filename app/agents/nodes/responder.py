@@ -21,7 +21,7 @@ def generate_node(state: AgentState):
     user_msg = state["messages"][-1]["content"] if state["messages"] else ""
 
     if is_conversational:
-        logfire.info("Generating conversational response using memory.")
+        logfire.info("Generating conversational response using memory.", history_message=len(state["messages"]) - 1)
         prompt = f"""
         You are a friendly and helpful Enterprise AI Assistant.
         Answer the user's latest message using the CONVERSATION HISTORY below.
@@ -33,17 +33,19 @@ def generate_node(state: AgentState):
         "{user_msg}"
         """
     else:
-        logfire.info("Generating technical RAG response.")
         max_content_chars = 25000
         full_context = ""
+        used_docs = 0
 
         for doc in state["documents"]:
             if len(full_context) + len(doc) < max_content_chars:
                 full_context += doc + "\n\n"
+                used_docs += 1
             else:
-                logfire.warning("Context truncated to fit Groq TPM limits.")
+                logfire.warning("Context truncated to fit Groq TPM limits.", used_docs=used_docs, total_docs=len(state["documents"]), max_chars=max_content_chars)
                 break
 
+        logfire.info("Generating Technical RAG response", used_docs=used_docs, context_chars=len(full_context))
         prompt = f"""
         You are a Senior Technical Architect.
         Answer the question using the TECHNICAL CONTEXT provided.
@@ -58,7 +60,7 @@ def generate_node(state: AgentState):
         "{user_msg}"
         """
 
-    with logfire.span("LLM Synthesis"):
+    with logfire.span("LLM Synthesis", mode="conversational" if is_conversational else "rag", prompt_chars=len(prompt)) as span:
         try:
             response = portkey_client.chat.completions.create(
                 messages=[{
@@ -70,6 +72,15 @@ def generate_node(state: AgentState):
 
             content = response.choices[0].message.content
             cache_status = extract_cache_status(response)
+            usage = getattr(response, "usage", None)
+
+            if usage is not None:    
+                span.set_attribute("model", usage.model)
+                span.set_attribute("prompt_tokens", usage.prompt_tokens)
+                span.set_attribute("completion_tokens", usage.completion_tokens)
+            span.set_attribute("cache_status", cache_status)
+            span.set_attribute("answer_chars", len(content or ""))
+
             is_cache_hit = cache_status == "HIT"
 
             if is_cache_hit:
@@ -83,8 +94,8 @@ def generate_node(state: AgentState):
 
             return {
                 "final_answer": content,
-                "status": status,
-                "plan": plan_update,
+                "status": "Cache Hit - instant response" if is_cache_hit else "Response generated",
+                "plan": state["plan"] + ["Cache Hit"] if is_cache_hit else state["plan"],
                 "messages": [{"role": "assistant", "content": content}]
             }
 

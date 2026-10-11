@@ -50,15 +50,21 @@ def query(request: QueryRequest):
         "final_answer": "",
     }
 
-    try:
-        result = rag_agent.invoke(initial_state, config=config)
-    except Exception as e:
-        logfire.error(f"Agent invocation failed: {e}")
-        return {
-            "answer": "Sorry, something went wrong processing your request.",
-            "sources": [],
-            "thought_process": [],
-        }
+    with logfire.span("rag query", thread_id=request.thread_id, question=request.q) as span:
+        try:
+            result = rag_agent.invoke(initial_state, config=config)
+        except Exception:
+            logfire.exception(f"Agent invocation failed", thread_id=request.thread_id)
+            return {
+                "answer": "Sorry, something went wrong processing your request.",
+                "sources": [],
+                "thought_process": [],
+            }
+
+        plan = request.get("plan", [])
+        span.set_attribute("intent", "conversational" if "Retrieval:Skipped" in plan else "technical")
+        span.set_attribute("source_count", len(result.get("documents", [])))
+        span.set_attribute("cache_hit", "Cache: Hit" in plan)
 
     return {
         "answer": result.get("final_answer", ""),
