@@ -61,10 +61,10 @@ def query(request: QueryRequest):
                 "thought_process": [],
             }
 
-        plan = request.get("plan", [])
-        span.set_attribute("intent", "conversational" if "Retrieval:Skipped" in plan else "technical")
+        plan = result.get("plan", [])
+        span.set_attribute("intent", "conversational" if "Retrieval: Skipped" in plan else "technical")
         span.set_attribute("source_count", len(result.get("documents", [])))
-        span.set_attribute("cache_hit", "Cache: Hit" in plan)
+        span.set_attribute("cache_hit", "Cache Hit" in plan)
 
     return {
         "answer": result.get("final_answer", ""),

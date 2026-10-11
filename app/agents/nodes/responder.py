@@ -75,9 +75,9 @@ def generate_node(state: AgentState):
             usage = getattr(response, "usage", None)
 
             if usage is not None:    
-                span.set_attribute("model", usage.model)
                 span.set_attribute("prompt_tokens", usage.prompt_tokens)
                 span.set_attribute("completion_tokens", usage.completion_tokens)
+            span.set_attribute("model", response.model)
             span.set_attribute("cache_status", cache_status)
             span.set_attribute("answer_chars", len(content or ""))
 
