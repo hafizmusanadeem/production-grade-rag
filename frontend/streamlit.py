@@ -76,7 +76,45 @@ section[data-testid="stSidebar"] { background: var(--panel); border-right: 1px s
 if "thread_id" not in st.session_state:
     st.session_state.thread_id = f"web-{uuid.uuid4().hex[:8]}"
 if "messages" not in st.session_state:
-    st.session_state.messages = []  # {role, content, sources, steps}
+    st.session_state.messages = []  # {role, content, sources, steps, error}
+
+
+class ApiError(Exception):
+    """The backend answered with a non-2xx status; `message` is safe to show the user."""
+
+    def __init__(self, message: str, status: int | None = None, error_id: str | None = None):
+        super().__init__(message)
+        self.message = message
+        self.status = status
+        self.error_id = error_id
+
+    def display(self) -> str:
+        text = self.message
+        if self.error_id:
+            text += f"\n\n`Reference: {self.error_id}`"
+        return text
+
+
+def _api_error_from(resp: requests.Response) -> ApiError:
+    """Translate the backend's error body into an ApiError."""
+    try:
+        body = resp.json()
+    except ValueError:
+        return ApiError(f"The server returned an unexpected response ({resp.status_code}).", resp.status_code)
+
+    if isinstance(body, dict) and isinstance(body.get("error"), dict):
+        err = body["error"]
+        return ApiError(
+            err.get("message") or "The request failed.",
+            resp.status_code,
+            err.get("error_id"),
+        )
+
+    if resp.status_code == 422 and isinstance(body, dict) and isinstance(body.get("detail"), list):
+        first = body["detail"][0].get("msg", "invalid input") if body["detail"] else "invalid input"
+        return ApiError(f"Your question couldn't be accepted: {first}.", 422)
+
+    return ApiError(f"The server returned an unexpected response ({resp.status_code}).", resp.status_code)
 
 
 def backend_ok() -> bool:
@@ -92,7 +130,8 @@ def ask(question: str) -> dict:
         json={"q": question, "thread_id": st.session_state.thread_id},
         timeout=REQUEST_TIMEOUT,
     )
-    resp.raise_for_status()
+    if not resp.ok:
+        raise _api_error_from(resp)
     return resp.json()
 
 
@@ -150,9 +189,12 @@ st.markdown(
 
 for msg in st.session_state.messages:
     with st.chat_message(msg["role"]):
-        st.markdown(msg["content"])
-        if msg["role"] == "assistant":
-            render_extras(msg.get("sources", []), msg.get("steps", []))
+        if msg.get("error"):
+            st.error(msg["content"])
+        else:
+            st.markdown(msg["content"])
+            if msg["role"] == "assistant":
+                render_extras(msg.get("sources", []), msg.get("steps", []))
 
 pending = None
 if not st.session_state.messages:
@@ -170,25 +212,35 @@ if question:
         st.markdown(question)
 
     with st.chat_message("assistant"):
+        is_error = False
+        sources: list[str] = []
+        steps: list[str] = []
         with st.spinner("Searching and drafting an answer…"):
             try:
                 data = ask(question)
                 answer = data.get("answer") or "No answer was returned."
                 sources = data.get("sources", [])
                 steps = data.get("thought_process", [])
+            except ApiError as e:
+                answer, is_error = e.display(), True
             except requests.Timeout:
-                answer, sources, steps = (
-                    "The request timed out. Try again, or ask a narrower question.", [], [],
+                answer, is_error = (
+                    "The request timed out. Try again, or ask a narrower question.", True,
+                )
+            except requests.ConnectionError:
+                answer, is_error = (
+                    f"Couldn't reach the API at {BACKEND_URL}. Check that the backend is running.", True,
                 )
             except requests.RequestException as e:
-                answer, sources, steps = (
-                    f"Couldn't reach the API at {BACKEND_URL}. Check that the backend is running.\n\n`{e}`",
-                    [], [],
-                )
-        st.markdown(answer)
-        render_extras(sources, steps)
+                answer, is_error = f"The request failed unexpectedly.\n\n`{e}`", True
+
+        if is_error:
+            st.error(answer)
+        else:
+            st.markdown(answer)
+            render_extras(sources, steps)
 
     st.session_state.messages.append(
-        {"role": "assistant", "content": answer, "sources": sources, "steps": steps}
+        {"role": "assistant", "content": answer, "sources": sources, "steps": steps, "error": is_error}
     )
     st.rerun() if pending else None

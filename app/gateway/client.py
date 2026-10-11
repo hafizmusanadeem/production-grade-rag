@@ -21,7 +21,7 @@ from app.config import settings
 #         {"override_params": {"model": f"@{settings.PORTKEY_SLUG_1}/openrouter/free"}},
 #         {"override_params": {"model": f"@{settings.PORTKEY_SLUG_2}/openrouter/free"}},
 #     ]
-# } 
+# }
 
 # The upper defined GATEWAY_CONFIG is setup in portkey.com/config from where It's imported.
 
@@ -41,12 +41,17 @@ def get_langchain_llm(feature: str = "rag") -> ChatOpenAI:
       ChatOpenAI supports base_url (points at Portkey) and default_headers (passes Portkey
       auth + config). The @rag/model-name format is Portkey-specific — Groq's own client
       does not understand it. You are still using Groq models; Portkey is just in the middle.
+
+    timeout / max_retries bound how long a request can hang on a slow provider, so a
+    stuck LLM call surfaces as an error (HTTP 502) instead of an endless spinner.
     """
     return ChatOpenAI(
         api_key=settings.PORTKEY_API_KEY,
         base_url=PORTKEY_GATEWAY_URL,
         model=f"@{settings.PORTKEY_SLUG_2}/openrouter/free",
         temperature=0,
+        timeout=settings.LLM_TIMEOUT_SECONDS,
+        max_retries=settings.LLM_MAX_RETRIES,
         default_headers=createHeaders(
             api_key=settings.PORTKEY_API_KEY,
             config=settings.PORTKEY_CONFIG_ID,

@@ -393,7 +393,10 @@ def search_qdrant(query: str,limit_k: int = 5) -> list[RetrievedChunk]:
             "QDRANT_COLLECTION is required to query Qdrant"
         )
 
-    client = get_qdrant_client()
+    # Searches must use the (short) search timeout. Without this argument the
+    # client defaults to the 120s ingestion timeout, so a slow Qdrant hangs a
+    # user request for two minutes instead of failing fast.
+    client = get_qdrant_client(timeout=settings.QDRANT_SEARCH_TIMEOUT_SECONDS)
 
     try:
         query_vector = embed_query(query)

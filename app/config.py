@@ -12,7 +12,7 @@ class Settings:
     # CHUNKING
     CHUNK_SIZE = int(os.getenv("CHUNK_SIZE", "1000"))
     CHUNK_OVERLAP = int(os.getenv("CHUNK_OVERLAP", "200"))
-    
+
     # QDRANT
     QDRANT_API_KEY = os.getenv("QDRANT_API_KEY")
     QDRANT_CLUSTER_ENDPOINT = os.getenv("QDRANT_CLUSTER_ENDPOINT")
@@ -22,6 +22,16 @@ class Settings:
     QDRANT_MAX_RETRIES = int(os.getenv("QDRANT_MAX_RETRIES", 5))
     QDRANT_UPSERT_BATCH_SIZE = int(os.getenv("QDRANT_UPSERT_BATCH_SIZE", 3))
     QDRANT_RETRY_BASE_DELAY_SECONDS = float(os.getenv("QDRANT_RETRY_BASE_DELAY_SECONDS", 2.0))
+
+    # RETRIEVAL RELEVANCE GUARD
+    # Reranked chunks scoring below this are treated as "not relevant". If no
+    # chunk clears it, the agent declines instead of answering from the LLM's
+    # own knowledge. Calibrate against your goldens (see top_rerank_score logs).
+    RERANK_MIN_SCORE = float(os.getenv("RERANK_MIN_SCORE", "0.02"))
+
+    # LLM CALLS (planner via LangChain; both bound the time a request can hang)
+    LLM_TIMEOUT_SECONDS = float(os.getenv("LLM_TIMEOUT_SECONDS", "60"))
+    LLM_MAX_RETRIES = int(os.getenv("LLM_MAX_RETRIES", "2"))
 
     # GROQ
     GROQ_MODEL = os.getenv("GROQ_MODEL")
