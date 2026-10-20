@@ -379,7 +379,7 @@
   },
   {
     "id": "k064",
-    "query": "kube-proxy kya karta hai aur kaunse proxy modes available hain?",
+    "query": "What does kube-proxy do, and which proxy modes are available?",
     "ideal_answer": "Kube-proxy manages the network rules on each node and performs connection forwarding or load balancing for Kubernetes cluster services. The available proxy modes are Userspace, iptables, and ipvs (alpha in 1.8).",
     "source": "architecture.pptx"
   },
@@ -727,7 +727,7 @@
   },
   {
     "id": "k122",
-    "query": "kubernetes job.yaml me parallelism aur restartPolicy kya set karni hai work queue ke liye?",
+    "query": "What should I set for parallelism and restartPolicy in the Kubernetes job.yaml for a work queue?",
     "ideal_answer": "The Job manifest (job.yaml) uses apiVersion batch/v1 and kind Job with the name job-wq-2. In its spec, `parallelism` is set to 2, meaning two worker pods run in parallel. The pod template has a container named \"c\" using the image you pushed to your registry (replace the placeholder `gcr.io/myproject/job-wq-2` with your own registry path), and `restartPolicy` is set to OnFailure. In this example each pod works on several items from the queue and then exits, signaling success when the queue is empty.",
     "source": "parallel_work_queue.txt"
   },
@@ -793,7 +793,7 @@
   },
   {
     "id": "k133",
-    "query": "HPA ke advantages kya hain?",
+    "query": "What are the advantages of HPA?",
     "ideal_answer": "The advantages of HPA are: Elasticity, because it automatically adjusts the number of pods to meet current demand; Cost-Efficiency, because it optimizes resource usage by adding or removing pods as needed; and Performance, because it helps maintain application performance during high traffic periods.",
     "source": "pods_autoscale.html"
   },
@@ -823,7 +823,7 @@
   },
   {
     "id": "k138",
-    "query": "VPA use karne ke kya fayde hain?",
+    "query": "What are the advantages of using VPA?",
     "ideal_answer": "The advantages of VPA are: Resource Optimization, because it ensures pods have the right amount of resources and prevents over-provisioning or under-provisioning; Simplified Resource Management, because it reduces the need to manually adjust resource requests and limits; and Improved Performance, because it helps maintain application performance by dynamically adjusting resources based on actual usage.",
     "source": "pods_autoscale.html"
   },
@@ -865,7 +865,7 @@
   },
   {
     "id": "k145",
-    "query": "Kisi specific container ko VPA scaling se exclude kaise karein?",
+    "query": "How do I exclude a specific container from VPA scaling?",
     "ideal_answer": "To exclude a specific container in a pod managed by the VerticalPodAutoscaler from scaling, set that container's mode to \"Off\" in the resourcePolicy. In the VPA spec, under resourcePolicy.containerPolicies, add an entry with `containerName: <container_name>` and `mode: \"Off\"`. Here <container_name> is the name of the container you want to exclude, and mode \"Off\" tells VPA not to apply any autoscaling actions to it, so VPA does not adjust that container's resource requests. This lets only chosen containers be autoscaled while others stay unaffected, allowing you to fine-tune scaling behavior for your workload.",
     "source": "pods_autoscale.html"
   },
