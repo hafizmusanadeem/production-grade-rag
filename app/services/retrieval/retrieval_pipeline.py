@@ -17,7 +17,7 @@ Usage:
 
 import json
 import logfire
-from dataclasses import dataclass, asdict, field
+from dataclasses import dataclass, field
 from typing import Any
 from time import perf_counter
 

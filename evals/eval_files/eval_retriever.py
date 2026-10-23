@@ -1,4 +1,3 @@
-# eval_retriever.py
 from dotenv import load_dotenv
 from pathlib import Path
 
@@ -68,7 +67,7 @@ def run(retriever):
             "chunk_overlap": settings.CHUNK_OVERLAP,
             "top_k": 3,
             "judge_model": judge,
-            "golden_set": GOLDEN_PATH,
+            "golden_set": str(GOLDEN_PATH),
         },
     )
     return summarize_by_metric(result)
