@@ -9,7 +9,7 @@ from app.services.retrieval.retrieval_pipeline import RetrievalPipeline, QueryRe
 from app.config import settings
 from evals.helper.deepeval_judge import OpenRouterJudge
 from evals.eval_files.eval_harness import load_goldens, summarize_by_metric, print_summary
-
+from eval.eval_files.eval_retriever import PipelineRetriever, get_judge, run
 load_dotenv()
 
 current_dir = Path(__file__).resolve().parent.parent
@@ -72,11 +72,33 @@ def run(retriever):
     )
     return summarize_by_metric(result)
 
+def compare(base: dict, reranked: dict) -> None:
+    print("\n" + "=" * 78)
+    print("BASE vs RERANKED  (avg score / pass rate)")
+    print("=" * 78)
+    print(f"  {'metric':<24}{'base':>14}{'reranked':>14}{'delta avg':>12}")
+    for name in sorted(set(base) | set(reranked)):
+        b, r = base.get(name), reranked.get(name)
+        if not b or not r:
+            print(f"  {name:<24}{'(missing in one run)':>40}")
+            continue
+        delta = r["avg_score"] - b["avg_score"]
+        print(
+            f"  {name:<24}"
+            f"{b['avg_score']:>8.2f}/{b['pass_rate']:>3.0f}%"
+            f"{r['avg_score']:>8.2f}/{r['pass_rate']:>3.0f}%"
+            f"{delta:>+12.2f}"
+        )
+    print("=" * 78)
 
-def run_local():
-    """Standalone convenience: build the retriever, then run."""
-    return run(PipelineRetriever())
+
+def run_comparison() -> dict:
+    judge = get_judge()  # one judge instance for both runs
+    base = run(PipelineRetriever(use_reranker=False), judge)
+    reranked = run(PipelineRetriever(use_reranker=True), judge)
+    compare(base, reranked)
+    return {"base": base, "reranked": reranked}
 
 
 if __name__ == "__main__":
-    print_summary("retriever", run_local())
+    run_comparison()

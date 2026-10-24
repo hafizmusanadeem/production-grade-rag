@@ -22,6 +22,7 @@ from typing import Any
 from time import perf_counter
 
 from app.services.retrieval.qdrant_service import search_qdrant, RetrievedChunk
+from app.config import RETRIEVAL_LIMIT_K, RERANK_TOP_N
 from app.services.retrieval.reranker import rerank_documents
 
 
@@ -29,8 +30,8 @@ from app.services.retrieval.reranker import rerank_documents
 class QueryRequest:
     """Input request model for the retrieval pipeline."""
     query: str
-    limit_k: int = 5          # Number of chunks to retrieve from Qdrant
-    top_n: int = 5            # Number of results after reranking
+    limit_k: int = RETRIEVAL_LIMIT_K          # Number of chunks to retrieve from Qdrant
+    top_n: int = RERANK_TOP_N            # Number of results after reranking
 
     def __post_init__(self):
         """Validate fields upon instantiation (Fail Fast)."""
@@ -42,8 +43,9 @@ class QueryRequest:
         """Create QueryRequest from a dictionary."""
         return cls(
             query=data.get("query", ""),
-            limit_k=data.get("limit_k", 5),
-            top_n=data.get("top_n", 5)
+            limit_k=data.get("limit_k", RETRIEVAL_LIMIT_K),
+            top_n=data.get("top_n", RERANK_TOP_N),
+            use_reranker=data.get("use_reranker", True)
         )
 
     @classmethod
@@ -145,24 +147,34 @@ class RetrievalPipeline:
                     processing_time_ms=(perf_counter() - start_time) * 1000
                 )
 
-            # Step 2: Rerank documents
-            reranked_chunks = rerank_documents(
-                query=request.query,
-                documents=retrieved_chunks,
-                top_n=request.top_n
-            )
-
-            final_results = [
-                RerankedResult(
-                    chunk_id=chunk.chunk_id,
-                    page_content=chunk.page_content,
-                    original_score=chunk.original_score,
-                    rerank_score=chunk.rerank_score,
-                    metadata=chunk.metadata,
+            if request.use_reranker:
+                reranked_chunks = rerank_documents(
+                    query=request.query,
+                    documents=request.retrieved_chunks,
+                    top_n=request.top_n,
                 )
-                for chunk in reranked_chunks
-            ]
 
+                final_results = [
+                    RerankedResult(
+                        chunk_id=chunk.chunk_id,
+                        page_content=chunk.page_content,
+                        original_score=chunk.original_score,
+                        rerank_score=chunk.rerank_score,
+                        metadata=chunk.metadata,
+                    )
+                    for chunk in reranked_chunks
+                ]
+            else:
+                final_results = [
+                    RerankedResult(
+                        chunk_id=chunk.chunk_id,
+                        page_content=chunk.page_content,
+                        original_score=chunk.score,
+                        rerank_score=chunk.score,
+                        metadata=chunk.metadata,
+                    )
+                    for chunk in retrieved_chunks[: request.top_n]
+                ]
             processing_time_ms = (perf_counter() - start_time) * 1000
 
             response = PipelineResponse(
@@ -176,6 +188,7 @@ class RetrievalPipeline:
             logfire.info(
                 "Retrieval pipeline completed",
                 query=request.query,
+                use_reranker=request.use_reranker,
                 retrieved=len(retrieved_chunks),
                 reranked=len(final_results),
                 processing_time_ms=processing_time_ms

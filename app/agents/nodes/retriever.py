@@ -1,7 +1,7 @@
 import logfire
 
 from app.agents.state import AgentState
-from app.config import settings
+from app.config import settings, RETRIEVAL_LIMIT_K, RERANK_TOP_N
 from app.exceptions import RAGError, RerankError, RetrievalError
 from app.services.retrieval.qdrant_service import search_qdrant
 from app.services.retrieval.reranker import rerank_documents
@@ -23,7 +23,7 @@ def retrieve_node(state: AgentState):
     with logfire.span("Knowledge Retrieval"):
         logfire.info("Searching Qdrant for", query=query)
         try:
-            raw_results = search_qdrant(query=query, limit_k=15)
+            raw_results = search_qdrant(query=query, limit_k=RETRIEVAL_LIMIT_K)
         except RAGError:
             raise
         except Exception as exc:
@@ -41,7 +41,7 @@ def retrieve_node(state: AgentState):
 
         with logfire.span("Semantic Reranking"):
             try:
-                reranked = rerank_documents(query=query, documents=raw_results, top_n=5)
+                reranked = rerank_documents(query=query, documents=raw_results, top_n=RERANK_TOP_N)
             except RAGError:
                 raise
             except Exception as exc:

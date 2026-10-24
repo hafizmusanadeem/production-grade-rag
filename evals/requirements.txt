@@ -1,0 +1,1 @@
+pytest                      # test runner (tests/ and deepeval's pytest mode)

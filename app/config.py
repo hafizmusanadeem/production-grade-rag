@@ -55,6 +55,9 @@ class Settings:
 
 settings = Settings()
 
+RETRIEVAL_LIMIT_K = 10   # candidates pulled from Qdrant
+RERANK_TOP_N = 5         # chunks kept after reranking
+
 
 def validate_env_vars() -> None:
     required = [
