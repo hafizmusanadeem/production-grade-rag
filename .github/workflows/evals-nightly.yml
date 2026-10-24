@@ -1,0 +1,30 @@
+name: evals-nightly
+
+on:
+  schedule:
+    - cron: "0 2 * * *"      # daily at 2 AM UTC
+  workflow_dispatch:
+
+jobs:
+  nightly-evals:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install deps
+        run: |
+          pip install --upgrade pip
+          pip install -e .
+      - name: Baseline must exist
+        id: baseline
+        run: test -f baselines/baseline.json && echo "exists=true" || echo "exists=false"
+      - name: Full suite (all goldens)
+        run: python -m evals.run_suite --quiet
+      - name: Compare against baseline
+        if: steps.baseline.outputs.exists == 'true'
+        run: |
+          python -m evals.compare
+          echo "exit=$?" >> $GITHUB_STEP_SUMMARY

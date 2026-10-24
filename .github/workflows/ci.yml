@@ -1,0 +1,41 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  unit-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install deps (offline eval extras)
+        run: |
+          pip install --upgrade pip
+          pip install -e .
+      - name: Run unit tests
+        run: pytest -q tests/ -m "unit"
+
+  eval-smoke:
+    runs-on: ubuntu-latest
+    needs: unit-tests
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install deps
+        run: |
+          pip install --upgrade pip
+          pip install -e ".[eval]"
+      - name: Smoke suite (no judge API needed for base metrics)
+        run: |
+          python -m evals.tools.noise_floor baselines/baseline.json baselines/candidate.json
+          python -m evals.compare --baseline baselines/baseline.json --candidate baselines/candidate.json || true

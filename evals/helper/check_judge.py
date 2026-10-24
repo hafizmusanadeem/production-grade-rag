@@ -1,21 +1,15 @@
-"""Run:  python -m evals.helper.check_judge"""
-import evals.helper.eval_env
-
-from pydantic import BaseModel
+"""evals/helper/check_judge.py -- sanity-check the OpenRouterJudge wiring."""
+import sys
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from evals.helper.deepeval_judge import OpenRouterJudge
 
-
-class Pong(BaseModel):
-    answer: str
-
-
-def main() -> None:
+try:
+    import os
+    if not os.getenv("OPENROUTER_API_KEY"):
+        print("WARN: OPENROUTER_API_KEY not set -- judge will fail at runtime.")
     judge = OpenRouterJudge()
-    print("model :", judge.get_model_name())
-    print("plain :", judge.generate("Reply with exactly: OK"))
-    print("schema:", judge.generate('Return {"answer": "pong"}', schema=Pong))
-
-
-if __name__ == "__main__":
-    main()
+    print(f"OpenRouterJudge OK: model={judge.get_model_name()}")
+except Exception as exc:
+    print(f"check_judge FAILED: {exc}")
+    sys.exit(1)

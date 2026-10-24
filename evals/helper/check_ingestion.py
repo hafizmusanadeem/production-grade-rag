@@ -1,60 +1,50 @@
-"""
-Confirms every `source` cited by the goldens is actually present in Qdrant.
-
-Run:  python -m evals.helper.check_ingestion
-Exit code 1 if any golden source is missing.
-"""
-import evals.helper.eval_env
-
+"""evals/helper/check_ingestion.py -- verify the Qdrant corpus covers every golden source."""
 import json
-import sys
-from collections import Counter
 from pathlib import Path
 
-from app.config import settings
-from app.services.retrieval.qdrant_service import get_qdrant_client
-
-GOLDEN_PATH = Path(__file__).resolve().parent.parent / "goldens" / "retriever.json"
-
-
-def count_points_by_file() -> Counter:
-    client = get_qdrant_client(timeout=settings.QDRANT_INGEST_TIMEOUT_SECONDS)
-    counts: Counter = Counter()
-    offset = None
-    while True:
-        points, offset = client.scroll(
-            collection_name=settings.QDRANT_COLLECTION,
-            limit=256,
-            offset=offset,
-            with_payload=["file_name"],
-            with_vectors=False,
-        )
-        for point in points:
-            counts[(point.payload or {}).get("file_name", "<missing file_name>")] += 1
-        if offset is None:
-            break
-    return counts
+ROOT = Path(__file__).resolve().parent.parent.parent
+GOLDEN_PATH = ROOT / "evals" / "goldens" / "retriever.json"
+CONFIG_PATH = ROOT / "app" / "config.py"
 
 
-def main() -> int:
-    goldens = json.loads(GOLDEN_PATH.read_text(encoding="utf-8"))
-    golden_counts = Counter(g["source"] for g in goldens)
-    in_qdrant = count_points_by_file()
+def main():
+    from app.config import settings, validate_env_vars
+    validate_env_vars()
+    from app.services.retrieval.qdrant_service import get_qdrant_client
 
-    print(f"Collection: {settings.QDRANT_COLLECTION}\n")
-    print(f"{'file_name':<28}{'qdrant points':>15}{'golden queries':>17}")
-    for name in sorted(set(in_qdrant) | set(golden_counts)):
-        print(f"{name:<28}{in_qdrant.get(name, 0):>15}{golden_counts.get(name, 0):>17}")
+    goldens = json.load(open(GOLDEN_PATH, encoding="utf-8"))
+    sources_expected = {g["source"] for g in goldens if g["source"]}
 
-    missing = sorted(s for s in golden_counts if in_qdrant.get(s, 0) == 0)
+    client = get_qdrant_client(timeout=settings.QDRANT_SEARCH_TIMEOUT_SECONDS)
+    collection = settings.QDRANT_COLLECTION
+    response = client.get_points(collection_name=collection)
+
+    points = response.points
+    by_file = {}
+    for p in points:
+        payload = dict(p.payload or {})
+        fn = payload.get("file_name", "") or payload.get("document_name", "")
+        if not fn:
+            # fall back to any point with a file_name field
+            by_file.setdefault("unknown", []).append(p.id)
+            continue
+        by_file.setdefault(fn, 0)
+        by_file[fn] += 1
+
+    print(f"Golden sources: {len(sources_expected)}")
+    for src in sorted(sources_expected):
+        found = src in by_file
+        pts = by_file.get(src, 0)
+        flag = "OK" if found else "MISSING"
+        print(f"  {src:<30} points={pts:<5}  [{flag}]")
+
+    missing = sources_expected - set(by_file.keys())
     if missing:
-        print(f"\n❌ Golden sources NOT in Qdrant: {', '.join(missing)}")
-        print("   Ingest only these (see note below), then re-run this check.")
-        return 1
-
-    print("\n✅ All golden sources are present in Qdrant.")
-    return 0
+        print(f"\nMissing from corpus: {sorted(missing)}")
+        raise SystemExit(1)
+    else:
+        print("\nAll golden sources present in corpus.")
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    main()

@@ -1,0 +1,36 @@
+name: evals-pr
+
+on:
+  pull_request:
+    paths:
+      - "app/**"
+      - "evals/**"
+
+jobs:
+  evals-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install deps
+        run: |
+          pip install --upgrade pip
+          pip install -e .
+      - name: Baseline must exist
+        id: baseline
+        run: test -f baselines/baseline.json && echo "exists=true" || echo "exists=false"
+      - name: Run smoke suite (20 goldens, limited judge sample)
+        run: python -m evals.run_suite --limit 20 --quiet
+      - name: Compare against baseline
+        if: steps.baseline.outputs.exists == 'true'
+        run: |
+          python -m evals.compare
+          echo "exit=$?" >> $GITHUB_STEP_SUMMARY
+      - name: Upload candidate artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: evals-candidate
+          path: baselines/candidate.json
