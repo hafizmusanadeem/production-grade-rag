@@ -32,6 +32,7 @@ class QueryRequest:
     query: str
     limit_k: int = RETRIEVAL_LIMIT_K          # Number of chunks to retrieve from Qdrant
     top_n: int = RERANK_TOP_N            # Number of results after reranking
+    use_reranker: bool = True         # Whether to run semantic reranking
 
     def __post_init__(self):
         """Validate fields upon instantiation (Fail Fast)."""
@@ -150,7 +151,7 @@ class RetrievalPipeline:
             if request.use_reranker:
                 reranked_chunks = rerank_documents(
                     query=request.query,
-                    documents=request.retrieved_chunks,
+                    documents=retrieved_chunks,
                     top_n=request.top_n,
                 )
 

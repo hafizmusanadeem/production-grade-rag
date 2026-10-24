@@ -61,7 +61,7 @@ class PDFLoader(BaseLoader):
     def _load_with_pdfplumber(self, path: Path) -> list[LoadedDocument]:
         docs: list[LoadedDocument] = []
 
-        with pdfplumber.open(str(path, encoding="utf-8")) as pdf:
+        with pdfplumber.open(str(path)) as pdf:
             for page_num, page in enumerate(pdf.pages, start=1):
                 text = (page.extract_text() or "").strip()
                 if not text:

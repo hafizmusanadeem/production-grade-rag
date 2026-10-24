@@ -1,0 +1,52 @@
+[project]
+name = "rag-production-grade"
+version = "0.1.0"
+description = "Enterprise Agentic RAG: LangGraph agent, Qdrant, Portkey, Gemini embeddings"
+requires-python = ">=3.11"
+license = { text = "MIT" }
+authors = [{ name = "Hafiz" }]
+readme = "README.md"
+
+# App runtime dependencies (pinned via uv.lock after `uv lock`)
+dependencies = [
+    "fastapi>=0.141",
+    "uvicorn[standard]",
+    "python-dotenv",
+    "requests",
+    "streamlit>=1.36",
+    "numpy",
+    "pytz",
+    "nest-asyncio",
+    "google-generativeai",
+    "langchain-google-genai",
+    "qdrant-client",
+    "flashrank",
+    "langchain>=0.3",
+    "langgraph>=0.2",
+    "langchain-groq",
+    "langchain-community",
+    "pydantic>=2.0",
+    "unstructured",
+    "python-pptx",
+    "python-docx",
+    "pypdf",
+    "beautifulsoup4",
+    "pdfplumber",
+    "logfire[fastapi,httpx,system-metrics,requests]",
+    "opentelemetry-instrumentation-system-metrics==0.65b0",
+]
+
+[project.optional-dependencies]
+eval = [
+    "deepeval>=4.1",
+    "langfuse",
+    "langchain-openrouter",
+    "pytest",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+markers = [
+    "unit",            # default fast offline tests
+    "eval",           # slow online/judge tests that need API keys
+]

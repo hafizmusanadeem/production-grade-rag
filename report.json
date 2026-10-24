@@ -1,45 +1,14 @@
 {
-  "started_at": "2026-10-07T19:09:26.107517+00:00",
-  "completed_at": "2026-10-07T19:09:57.066825+00:00",
+  "started_at": "2026-10-24T20:29:12.092602+00:00",
+  "completed_at": "2026-10-24T20:29:12.112599+00:00",
   "source_directory": "C:\\Users\\DELL\\Desktop\\rag-production-grade\\DATA\\true_data",
   "total_files": 6,
-  "successful": 3,
+  "successful": 0,
   "failed": 0,
   "skipped": 0,
-  "total_chunks": 79,
-  "total_processing_time_sec": 30.959308,
+  "total_chunks": 0,
+  "total_processing_time_sec": 0.019997,
   "data_directory": "DATA",
   "qdrant_collection": "rag-collection",
-  "files": [
-    {
-      "file_name": "cronjobs.docx",
-      "source_path": "C:\\Users\\DELL\\Desktop\\rag-production-grade\\DATA\\true_data\\cronjobs.docx",
-      "file_size_kb": 64.2255859375,
-      "status": "success",
-      "chunks_created": 48,
-      "error_message": null,
-      "processing_time_sec": 19.072458,
-      "local_path": "DATA\\embeddings\\cronjobs.embeddings.json"
-    },
-    {
-      "file_name": "job_management.html",
-      "source_path": "C:\\Users\\DELL\\Desktop\\rag-production-grade\\DATA\\true_data\\job_management.html",
-      "file_size_kb": 14.3349609375,
-      "status": "success",
-      "chunks_created": 12,
-      "error_message": null,
-      "processing_time_sec": 5.36578,
-      "local_path": "DATA\\embeddings\\job_management.embeddings.json"
-    },
-    {
-      "file_name": "monitor_job.docx",
-      "source_path": "C:\\Users\\DELL\\Desktop\\rag-production-grade\\DATA\\true_data\\monitor_job.docx",
-      "file_size_kb": 25.3369140625,
-      "status": "success",
-      "chunks_created": 19,
-      "error_message": null,
-      "processing_time_sec": 6.511907,
-      "local_path": "DATA\\embeddings\\monitor_job.embeddings.json"
-    }
-  ]
+  "files": []
 }
