@@ -16,13 +16,15 @@ Usage:
 """
 
 import json
-import logfire
 from dataclasses import dataclass, field
-from typing import Any
 from time import perf_counter
+from typing import Any
 
-from app.services.retrieval.qdrant_service import search_qdrant, RetrievedChunk
-from app.config import RETRIEVAL_LIMIT_K, RERANK_TOP_N
+import logfire
+
+from app.config import RERANK_TOP_N, RETRIEVAL_LIMIT_K
+from app.exceptions import RAGError, RerankError, RetrievalError
+from app.services.retrieval.qdrant_service import search_qdrant
 from app.services.retrieval.reranker import rerank_documents
 
 
@@ -33,6 +35,7 @@ class QueryRequest:
     limit_k: int = RETRIEVAL_LIMIT_K          # Number of chunks to retrieve from Qdrant
     top_n: int = RERANK_TOP_N            # Number of results after reranking
     use_reranker: bool = True         # Whether to run semantic reranking
+    min_rerank_score: float | None = None
 
     def __post_init__(self):
         """Validate fields upon instantiation (Fail Fast)."""
@@ -46,7 +49,8 @@ class QueryRequest:
             query=data.get("query", ""),
             limit_k=data.get("limit_k", RETRIEVAL_LIMIT_K),
             top_n=data.get("top_n", RERANK_TOP_N),
-            use_reranker=data.get("use_reranker", True)
+            use_reranker=data.get("use_reranker", True),
+            min_rerank_score=data.get("min_rerank_score")
         )
 
     @classmethod
@@ -83,6 +87,8 @@ class PipelineResponse:
     reranked_count: int
     results: list[RerankedResult]
     processing_time_ms: float
+    timings_ms: dict = field(default_factory=dict)
+    top_rerank_score: float | None = None
 
     def to_json(self) -> str:
         """Serialize response to JSON string."""
@@ -95,7 +101,9 @@ class PipelineResponse:
             "retrieved_count": self.retrieved_count,
             "reranked_count": self.reranked_count,
             "results": [r.to_dict() for r in self.results],
-            "processing_time_ms": self.processing_time_ms
+            "processing_time_ms": self.processing_time_ms,
+            "timings_ms": self.timings_ms,
+            "top_rerank_score": self.top_rerank_score,
         }
 
 
@@ -133,11 +141,14 @@ class RetrievalPipeline:
 
         try:
             # Step 1: Search Qdrant (includes query embedding internally)
-            retrieved_chunks = search_qdrant(
-                query=request.query,
-                limit_k=request.limit_k
-            )
-
+            search_started = perf_counter()
+            try:
+                retrieved_chunks = search_qdrant(query=request.query, limit_k=request.limit_k)
+            except RAGError:
+                raise
+            except Exception as exc:
+                raise RetrievalError(f"Vector search failed: {exc}") from exc
+            embed_qdrant_ms = (perf_counter() - search_started) * 1000
             if not retrieved_chunks:
                 logfire.warn("No chunks retrieved from Qdrant", query=request.query)
                 return PipelineResponse(
@@ -145,16 +156,22 @@ class RetrievalPipeline:
                     retrieved_count=0,
                     reranked_count=0,
                     results=[],
-                    processing_time_ms=(perf_counter() - start_time) * 1000
+                    processing_time_ms=(perf_counter() - start_time) * 1000,
+                    timings_ms={"embed_qdrant": embed_qdrant_ms},
                 )
 
+            rerank_ms = 0.0
+            top_rerank_score = None
             if request.use_reranker:
-                reranked_chunks = rerank_documents(
-                    query=request.query,
-                    documents=retrieved_chunks,
-                    top_n=request.top_n,
-                )
-
+                rerank_started = perf_counter()
+                try:
+                    reranked_chunks = rerank_documents(query=request.query, documents=retrieved_chunks, top_n=request.top_n)
+                except RAGError:
+                    raise
+                except Exception as exc:
+                    raise RerankError(f"Reranking failed: {exc}") from exc
+                rerank_ms = (perf_counter() - rerank_started) * 1000
+                top_rerank_score = max((float(c.rerank_score) for c in reranked_chunks), default=None)
                 final_results = [
                     RerankedResult(
                         chunk_id=chunk.chunk_id,
@@ -165,6 +182,8 @@ class RetrievalPipeline:
                     )
                     for chunk in reranked_chunks
                 ]
+                if request.min_rerank_score is not None:
+                    final_results = [r for r in final_results if r.rerank_score >= request.min_rerank_score]
             else:
                 final_results = [
                     RerankedResult(
@@ -183,7 +202,9 @@ class RetrievalPipeline:
                 retrieved_count=len(retrieved_chunks),
                 reranked_count=len(final_results),
                 results=final_results,
-                processing_time_ms=processing_time_ms
+                processing_time_ms=processing_time_ms,
+                timings_ms={"embed_qdrant": embed_qdrant_ms, "rerank": rerank_ms},
+                top_rerank_score=top_rerank_score,
             )
 
             logfire.info(
@@ -192,7 +213,9 @@ class RetrievalPipeline:
                 use_reranker=request.use_reranker,
                 retrieved=len(retrieved_chunks),
                 reranked=len(final_results),
-                processing_time_ms=processing_time_ms
+                processing_time_ms=processing_time_ms,
+                timings_ms={"embed_qdrant": embed_qdrant_ms, "rerank": rerank_ms},
+                top_rerank_score=top_rerank_score,
             )
 
             return response

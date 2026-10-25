@@ -1,0 +1,67 @@
+name: eval-collection-rebuild
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: eval-collection-rebuild
+  cancel-in-progress: false
+
+jobs:
+  rebuild:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+
+      - name: Install from lockfile
+        run: uv sync --frozen --extra eval
+
+      - name: Rebuild the frozen eval collection from DATA/true_data
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          QDRANT_API_KEY: ${{ secrets.QDRANT_API_KEY }}
+          QDRANT_CLUSTER_ENDPOINT: ${{ secrets.QDRANT_CLUSTER_ENDPOINT }}
+          QDRANT_COLLECTION: rag-eval-collection
+          LOGFIRE_TOKEN: ${{ secrets.LOGFIRE_TOKEN }}
+        run: |
+          python -m app.ingestion.batch_processor DATA/true_data \
+            --data-dir DATA_eval --force --output evals/artifacts/eval_collection_report.json
+
+      - name: Verify ingestion against the golden sources
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          QDRANT_API_KEY: ${{ secrets.QDRANT_API_KEY }}
+          QDRANT_CLUSTER_ENDPOINT: ${{ secrets.QDRANT_CLUSTER_ENDPOINT }}
+          QDRANT_COLLECTION: rag-eval-collection
+          LOGFIRE_TOKEN: ${{ secrets.LOGFIRE_TOKEN }}
+        run: python -m evals.helper.check_ingestion
+
+      - name: Publish manifest and corpus fingerprint
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          QDRANT_API_KEY: ${{ secrets.QDRANT_API_KEY }}
+          QDRANT_CLUSTER_ENDPOINT: ${{ secrets.QDRANT_CLUSTER_ENDPOINT }}
+          QDRANT_COLLECTION: rag-eval-collection
+          LOGFIRE_TOKEN: ${{ secrets.LOGFIRE_TOKEN }}
+        run: |
+          python - <<'PY' >> "$GITHUB_STEP_SUMMARY"
+          import json
+          from app.ingestion.manifest import corpus_fingerprint
+          print("## Eval collection rebuilt")
+          print(f"- corpus_fingerprint: `{corpus_fingerprint('DATA_eval')}`")
+          report = json.load(open("evals/artifacts/eval_collection_report.json", encoding="utf-8"))
+          print(f"- successful: {report.get('successful')}")
+          print(f"- failed: {report.get('failed')}")
+          print(f"- skipped: {report.get('skipped')}")
+          print(f"- total_chunks: {report.get('total_chunks')}")
+          print(f"- qdrant_collection: {report.get('qdrant_collection')}")
+          PY

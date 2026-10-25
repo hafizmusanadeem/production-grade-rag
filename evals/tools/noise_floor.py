@@ -5,6 +5,7 @@ max/mean absolute delta per metric, suggesting a tolerance. The reference
 tolerances (0.02 gates, 0.05 quality, 25% latency) were calibrated for a free
 judge; recalibrate here if you pin a different judge (see D-1).
 """
+import argparse
 import json
 from pathlib import Path
 
@@ -14,12 +15,17 @@ CANDIDATE = ROOT / "baselines" / "candidate.json"
 
 
 def main():
-    if not BASELINE.exists() or not CANDIDATE.exists():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("baseline", nargs="?", type=Path, default=BASELINE)
+    parser.add_argument("candidate", nargs="?", type=Path, default=CANDIDATE)
+    args = parser.parse_args()
+    baseline_path, candidate_path = args.baseline, args.candidate
+    if not baseline_path.exists() or not candidate_path.exists():
         print("Both baselines/*.json must exist.")
         raise SystemExit(1)
 
-    b = json.loads(BASELINE.read_text())
-    c = json.loads(CANDIDATE.read_text())
+    b = json.loads(baseline_path.read_text(encoding="utf-8"))
+    c = json.loads(candidate_path.read_text(encoding="utf-8"))
     bm = b.get("metrics", {})
     cm = c.get("metrics", {})
 
@@ -31,7 +37,7 @@ def main():
         delta = None
         # only meaningful numeric deltas
         try:
-            if isinstance(bv, float) and isinstance(cv, float):
+            if isinstance(bv, (int, float)) and not isinstance(bv, bool) and isinstance(cv, (int, float)) and not isinstance(cv, bool):
                 delta = cv - bv
         except Exception:
             pass
@@ -51,12 +57,6 @@ def main():
     print(f"  max abs delta : {max_delta:.4g}")
     print(f"  mean abs delta: {avg_delta:.4g}")
     print(f"  suggested tolerance : {suggested_tol:.4g}")
-
-    # Split by kind
-    kinds = {}
-    for mid, bv, cv, d in valid:
-        kinds.setdefault("baseline", []).append((mid, d))
-        kinds["candidate"] = []
 
     # Just show top 20 biggest deltas per direction
     higher = sorted((m, d) for m, bv, cv, d in valid if isinstance(d, float) and d > 0)[-10:]

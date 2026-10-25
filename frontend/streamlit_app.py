@@ -135,6 +135,15 @@ def ask(question: str) -> dict:
     return resp.json()
 
 
+def submit_feedback(trace_id: str, rating: str, comment: str | None = None):
+    response = requests.post(f"{BACKEND_URL}/feedback",
+                             json={"trace_id": trace_id, "rating": rating, "comment": comment},
+                             timeout=10)
+    if not response.ok:
+        raise _api_error_from(response)
+    return response.json()
+
+
 def render_extras(sources: list[str], steps: list[str]) -> None:
     """Chips for the agent's steps + an expander with the retrieved chunks."""
     if steps:
@@ -187,7 +196,7 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-for msg in st.session_state.messages:
+for msg_index, msg in enumerate(st.session_state.messages):
     with st.chat_message(msg["role"]):
         if msg.get("error"):
             st.error(msg["content"])
@@ -195,6 +204,21 @@ for msg in st.session_state.messages:
             st.markdown(msg["content"])
             if msg["role"] == "assistant":
                 render_extras(msg.get("sources", []), msg.get("steps", []))
+                if msg.get("trace_id") and not msg.get("feedback_sent"):
+                    up_col, down_col = st.columns(2)
+                    try:
+                        if up_col.button("👍 Helpful", key=f"feedback_up_{msg_index}"):
+                            submit_feedback(msg["trace_id"], "up")
+                            msg["feedback_sent"] = True
+                            st.success("Thanks for your feedback.")
+                            st.rerun()
+                        if down_col.button("👎 Not helpful", key=f"feedback_down_{msg_index}"):
+                            submit_feedback(msg["trace_id"], "down")
+                            msg["feedback_sent"] = True
+                            st.success("Thanks for your feedback.")
+                            st.rerun()
+                    except (ApiError, requests.RequestException):
+                        st.warning("Feedback could not be saved right now.")
 
 pending = None
 if not st.session_state.messages:
@@ -215,12 +239,14 @@ if question:
         is_error = False
         sources: list[str] = []
         steps: list[str] = []
+        trace_id = None
         with st.spinner("Searching and drafting an answer…"):
             try:
                 data = ask(question)
                 answer = data.get("answer") or "No answer was returned."
                 sources = data.get("sources", [])
                 steps = data.get("thought_process", [])
+                trace_id = data.get("trace_id")
             except ApiError as e:
                 answer, is_error = e.display(), True
             except requests.Timeout:
@@ -241,6 +267,7 @@ if question:
             render_extras(sources, steps)
 
     st.session_state.messages.append(
-        {"role": "assistant", "content": answer, "sources": sources, "steps": steps, "error": is_error}
+        {"role": "assistant", "content": answer, "sources": sources, "steps": steps,
+         "trace_id": trace_id, "feedback_sent": False, "error": is_error}
     )
     st.rerun() if pending else None

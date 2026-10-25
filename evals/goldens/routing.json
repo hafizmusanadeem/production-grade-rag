@@ -1,0 +1,494 @@
+[
+  {
+    "id": "r001",
+    "history": [],
+    "message": "What is a StatefulSet, and how does it handle Pod names and storage?",
+    "expected_intent": "technical",
+    "derived_from": "k076",
+    "tags": [
+      "doc:architecture",
+      "type:factual",
+      "lang:en"
+    ],
+    "status": "draft"
+  },
+  {
+    "id": "r002",
+    "history": [],
+    "message": "What is the difference between a ConfigMap and a Secret?",
+    "expected_intent": "technical",
+    "derived_from": "k087",
+    "tags": [
+      "doc:architecture",
+      "type:factual",
+      "lang:en"
+    ],
+    "status": "draft"
+  },
+  {
+    "id": "r003",
+    "history": [],
+    "message": "What other services run in a Kubernetes cluster besides the master and node components?",
+    "expected_intent": "technical",
+    "derived_from": "k066",
+    "tags": [
+      "doc:architecture",
+      "type:factual",
+      "lang:en"
+    ],
+    "status": "draft"
+  },
+  {
+    "id": "r004",
+    "history": [],
+    "message": "How should a Kubernetes Job shut down gracefully?",
+    "expected_intent": "technical",
+    "derived_from": "k033",
+    "tags": [
+      "doc:cronjobs",
+      "type:factual",
+      "lang:en"
+    ],
+    "status": "draft"
+  },
+  {
+    "id": "r005",
+    "history": [],
+    "message": "How can I restrict a Job's network access with a NetworkPolicy?",
+    "expected_intent": "technical",
+    "derived_from": "k023",
+    "tags": [
+      "doc:cronjobs",
+      "type:factual",
+      "lang:en"
+    ],
+    "status": "draft"
+  },
+  {
+    "id": "r006",
+    "history": [],
+    "message": "What data retention periods does the cleanup CronJob use?",
+    "expected_intent": "technical",
+    "derived_from": "k047",
+    "tags": [
+      "doc:cronjobs",
+      "type:factual",
+      "lang:en"
+    ],
+    "status": "draft"
+  },
+  {
+    "id": "r007",
+    "history": [],
+    "message": "How do I create the hello-job in the cluster from the YAML file?",
+    "expected_intent": "technical",
+    "derived_from": "k110",
+    "tags": [
+      "doc:monitor_job",
+      "type:factual",
+      "lang:en"
+    ],
+    "status": "draft"
+  },
+  {
+    "id": "r008",
+    "history": [],
+    "message": "How do I view Kubernetes events for my jobs?",
+    "expected_intent": "technical",
+    "derived_from": "k114",
+    "tags": [
+      "doc:monitor_job",
+      "type:factual",
+      "lang:en"
+    ],
+    "status": "draft"
+  },
+  {
+    "id": "r009",
+    "history": [],
+    "message": "What information does kubectl describe job show, and where can I find the Job's events?",
+    "expected_intent": "technical",
+    "derived_from": "k111",
+    "tags": [
+      "doc:monitor_job",
+      "type:factual",
+      "lang:en"
+    ],
+    "status": "draft"
+  },
+  {
+    "id": "r010",
+    "history": [],
+    "message": "How do I run the work-queue Job, check its status, and view worker logs?",
+    "expected_intent": "technical",
+    "derived_from": "k123",
+    "tags": [
+      "doc:parallel_work_queue",
+      "type:factual",
+      "lang:en"
+    ],
+    "status": "draft"
+  },
+  {
+    "id": "r011",
+    "history": [],
+    "message": "How do I start Redis for the Kubernetes work-queue example?",
+    "expected_intent": "technical",
+    "derived_from": "k125",
+    "tags": [
+      "doc:parallel_work_queue",
+      "type:factual",
+      "lang:en"
+    ],
+    "status": "draft"
+  },
+  {
+    "id": "r012",
+    "history": [],
+    "message": "What are alternatives to using a Kubernetes Job with a work queue for background processing?",
+    "expected_intent": "technical",
+    "derived_from": "k128",
+    "tags": [
+      "doc:parallel_work_queue",
+      "type:factual",
+      "lang:en"
+    ],
+    "status": "draft"
+  },
+  {
+    "id": "r013",
+    "history": [],
+    "message": "Why do I need Metrics Server before testing HPA or VPA, and how do I install it?",
+    "expected_intent": "technical",
+    "derived_from": "k130",
+    "tags": [
+      "doc:pods_autoscale",
+      "type:factual",
+      "lang:en"
+    ],
+    "status": "draft"
+  },
+  {
+    "id": "r014",
+    "history": [],
+    "message": "How do I configure a VerticalPodAutoscaler, and what update modes can I use?",
+    "expected_intent": "technical",
+    "derived_from": "k142",
+    "tags": [
+      "doc:pods_autoscale",
+      "type:factual",
+      "lang:en"
+    ],
+    "status": "draft"
+  },
+  {
+    "id": "r015",
+    "history": [],
+    "message": "What is Kubernetes autoscaling, and what are the two main types covered in the HPA and VPA guide?",
+    "expected_intent": "technical",
+    "derived_from": "k129",
+    "tags": [
+      "doc:pods_autoscale",
+      "type:factual",
+      "lang:en"
+    ],
+    "status": "draft"
+  },
+  {
+    "id": "r016",
+    "history": [],
+    "message": "hello",
+    "expected_intent": "conversational",
+    "tags": [
+      "type:conversational",
+      "lang:en"
+    ],
+    "status": "draft"
+  },
+  {
+    "id": "r017",
+    "history": [],
+    "message": "hi there",
+    "expected_intent": "conversational",
+    "tags": [
+      "type:conversational",
+      "lang:en"
+    ],
+    "status": "draft"
+  },
+  {
+    "id": "r018",
+    "history": [],
+    "message": "thanks, that helped",
+    "expected_intent": "conversational",
+    "tags": [
+      "type:conversational",
+      "lang:en"
+    ],
+    "status": "draft"
+  },
+  {
+    "id": "r019",
+    "history": [],
+    "message": "thank you",
+    "expected_intent": "conversational",
+    "tags": [
+      "type:conversational",
+      "lang:en"
+    ],
+    "status": "draft"
+  },
+  {
+    "id": "r020",
+    "history": [],
+    "message": "what did I just ask you?",
+    "expected_intent": "conversational",
+    "tags": [
+      "type:conversational",
+      "lang:en"
+    ],
+    "status": "draft"
+  },
+  {
+    "id": "r021",
+    "history": [],
+    "message": "can you repeat your last answer?",
+    "expected_intent": "conversational",
+    "tags": [
+      "type:conversational",
+      "lang:en"
+    ],
+    "status": "draft"
+  },
+  {
+    "id": "r022",
+    "history": [],
+    "message": "and in plain English?",
+    "expected_intent": "conversational",
+    "tags": [
+      "type:conversational",
+      "lang:en"
+    ],
+    "status": "draft"
+  },
+  {
+    "id": "r023",
+    "history": [],
+    "message": "what do you mean by that?",
+    "expected_intent": "conversational",
+    "tags": [
+      "type:conversational",
+      "lang:en"
+    ],
+    "status": "draft"
+  },
+  {
+    "id": "r024",
+    "history": [],
+    "message": "ok, now explain it simply",
+    "expected_intent": "conversational",
+    "tags": [
+      "type:conversational",
+      "lang:en"
+    ],
+    "status": "draft"
+  },
+  {
+    "id": "r025",
+    "history": [],
+    "message": "can you give me an example?",
+    "expected_intent": "conversational",
+    "tags": [
+      "type:conversational",
+      "lang:en"
+    ],
+    "status": "draft"
+  },
+  {
+    "id": "r026",
+    "history": [],
+    "message": "you are great, thanks",
+    "expected_intent": "conversational",
+    "tags": [
+      "type:conversational",
+      "lang:en"
+    ],
+    "status": "draft"
+  },
+  {
+    "id": "r027",
+    "history": [],
+    "message": "good bye",
+    "expected_intent": "conversational",
+    "tags": [
+      "type:conversational",
+      "lang:en"
+    ],
+    "status": "draft"
+  },
+  {
+    "id": "r028",
+    "history": [],
+    "message": "What is the capital of Germany?",
+    "expected_intent": "out_of_scope",
+    "tags": [
+      "type:off_topic",
+      "lang:en"
+    ],
+    "status": "draft"
+  },
+  {
+    "id": "r029",
+    "history": [],
+    "message": "Plan a 5-day trip to Bali.",
+    "expected_intent": "out_of_scope",
+    "tags": [
+      "type:off_topic",
+      "lang:en"
+    ],
+    "status": "draft"
+  },
+  {
+    "id": "r030",
+    "history": [],
+    "message": "Write a Django shop checkout view.",
+    "expected_intent": "out_of_scope",
+    "tags": [
+      "type:off_topic",
+      "lang:en"
+    ],
+    "status": "draft"
+  },
+  {
+    "id": "r031",
+    "history": [],
+    "message": "Write a poem about spring flowers.",
+    "expected_intent": "out_of_scope",
+    "tags": [
+      "type:off_topic",
+      "lang:en"
+    ],
+    "status": "draft"
+  },
+  {
+    "id": "r032",
+    "history": [],
+    "message": "Who won the 2022 FIFA World Cup?",
+    "expected_intent": "out_of_scope",
+    "tags": [
+      "type:off_topic",
+      "lang:en"
+    ],
+    "status": "draft"
+  },
+  {
+    "id": "r033",
+    "history": [],
+    "message": "Give me a lasagna recipe.",
+    "expected_intent": "out_of_scope",
+    "tags": [
+      "type:off_topic",
+      "lang:en"
+    ],
+    "status": "draft"
+  },
+  {
+    "id": "r034",
+    "history": [],
+    "message": "Explain quantum computing to a child.",
+    "expected_intent": "out_of_scope",
+    "tags": [
+      "type:off_topic",
+      "lang:en"
+    ],
+    "status": "draft"
+  },
+  {
+    "id": "r035",
+    "history": [],
+    "message": "Invest my savings in penny stocks.",
+    "expected_intent": "out_of_scope",
+    "tags": [
+      "type:off_topic",
+      "lang:en"
+    ],
+    "status": "draft"
+  },
+  {
+    "id": "r036",
+    "history": [],
+    "message": "Translate 'good morning' into Japanese.",
+    "expected_intent": "out_of_scope",
+    "tags": [
+      "type:off_topic",
+      "lang:en"
+    ],
+    "status": "draft"
+  },
+  {
+    "id": "r037",
+    "history": [],
+    "message": "Yar laptop buy karne ke liye kya recommend karte ho?",
+    "expected_intent": "out_of_scope",
+    "tags": [
+      "type:off_topic",
+      "lang:en"
+    ],
+    "status": "draft"
+  },
+  {
+    "id": "r038",
+    "history": [],
+    "message": "Mausam ka haal kya hai Kal sta?",
+    "expected_intent": "out_of_scope",
+    "tags": [
+      "type:off_topic",
+      "lang:en"
+    ],
+    "status": "draft"
+  },
+  {
+    "id": "r039",
+    "history": [],
+    "message": "Aaj cricket ka score kya hai?",
+    "expected_intent": "out_of_scope",
+    "tags": [
+      "type:off_topic",
+      "lang:en"
+    ],
+    "status": "draft"
+  },
+  {
+    "id": "r040",
+    "history": [],
+    "message": "Write my resume objective statement.",
+    "expected_intent": "out_of_scope",
+    "tags": [
+      "type:off_topic",
+      "lang:en"
+    ],
+    "status": "draft"
+  },
+  {
+    "id": "r041",
+    "history": [],
+    "message": "What is a good Netflix series for tonight?",
+    "expected_intent": "out_of_scope",
+    "tags": [
+      "type:off_topic",
+      "lang:en"
+    ],
+    "status": "draft"
+  },
+  {
+    "id": "r042",
+    "history": [],
+    "message": "Explain Kubernetes CronJobs, then recommend a laptop for a student.",
+    "expected_intent": "technical",
+    "tags": [
+      "type:mixed",
+      "lang:en"
+    ],
+    "status": "draft"
+  }
+]

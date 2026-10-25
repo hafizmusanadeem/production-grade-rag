@@ -1,4 +1,5 @@
 """evals/tools/export_chunks.py -- dump the Qdrant corpus to JSON sorted by file_name."""
+import argparse
 import json
 from pathlib import Path
 
@@ -10,17 +11,19 @@ OUTPUT = ARTIFACTS_DIR / "chunks_dump.json"
 
 
 def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--max", type=int, default=None)
+    args = parser.parse_args()
     from app.config import settings, validate_env_vars
     from app.services.retrieval.qdrant_service import get_qdrant_client
-    validate_env_vars()
+    from evals.helper.qdrant_scan import scroll_all
+    validate_env_vars(require_logfire=False, require_llm=False)
 
     client = get_qdrant_client(timeout=settings.QDRANT_SEARCH_TIMEOUT_SECONDS)
     collection = settings.QDRANT_COLLECTION
     print(f"Reading collection {collection}...")
-    response = client.get_points(collection_name=collection)
-
     docs = []
-    for point in response.points:
+    for point in scroll_all(client, collection):
         payload = dict(point.payload or {})
         page_content = payload.pop("page_content", "")
         if not page_content:
@@ -31,18 +34,16 @@ def main():
         docs.append({
             "chunk_id": chunk_id,
             "page_content": page_content,
-            "score": float(point.score),
-            "original_score": float(payload.get("original_score", 0)),
-            "rerank_score": float(payload.get("rerank_score", 0)),
-            "metadata": metadata,
             "file_name": file_name,
+            "chunk_index": payload.get("chunk_index", 0),
+            "doc_index": payload.get("doc_index", 0),
+            "page": payload.get("page", payload.get("slide")),
+            "metadata": metadata,
         })
 
-    # Sort by file_name, then chunk_id for determinism
-    docs.sort(key=lambda d: (d["file_name"] or "", d["chunk_id"]))
-
-    # Cap at 5000 to keep the dump manageable
-    docs = docs[:5000]
+    docs.sort(key=lambda d: (d["file_name"] or "", d["doc_index"] or 0, d["chunk_index"] or 0))
+    if args.max is not None:
+        docs = docs[:max(args.max, 0)]
 
     with open(OUTPUT, "w", encoding="utf-8") as f:
         json.dump(docs, f, indent=2, ensure_ascii=False)

@@ -1,14 +1,14 @@
 from __future__ import annotations
+
 from dataclasses import dataclass, field
+from functools import lru_cache
 from typing import TYPE_CHECKING, Any
 from uuid import uuid4
 
 import logfire
 from langchain_google_genai import GoogleGenerativeAIEmbeddings
-from functools import lru_cache
 
 from app.config import settings
-
 
 if TYPE_CHECKING:
     from app.ingestion.chunking.chunker import Chunk

@@ -5,32 +5,45 @@ Three GEval metrics on LIVE pipeline output: Correctness (truth), Completeness
 Architect") has no teaching voice, so Style scores a CampusX lecture and would
 mask real regression.
 """
-from dotenv import load_dotenv
-
-from deepeval import evaluate
-from deepeval.test_case import LLMTestCase, LLMTestCaseParams
 from deepeval.metrics import GEval
 from deepeval.metrics.g_eval import Rubric
+from deepeval.test_case import LLMTestCase, LLMTestCaseParams
+from dotenv import load_dotenv
 
+from evals.harness import (
+    flatten_summary,
+    load_goldens,
+    print_summary,
+    run_evaluate,
+    select_goldens,
+    summarize_by_metric,
+)
+from evals.helper.deepeval_judge import get_judge
 from evals.target import AgentTarget
-from evals.harness import load_goldens, summarize_by_metric, flatten_summary, print_summary
 
 load_dotenv(override=True)
 
-GOLDEN_PATH = "evals/goldens/correctness.json"
-JUDGE_MODEL = "gpt-4o-mini"
+from evals.config import GOLDEN_DIR
+
+GOLDEN_PATH = GOLDEN_DIR / "correctness.json"
+NAMESPACE = "application"
 THRESHOLD = 0.7
 
 
-def run(agent_target: AgentTarget | None = None):
+def run(agent_target: AgentTarget | None = None, *, limit=None, ids=None, verbose=True):
     if agent_target is None:
         agent_target = AgentTarget()
 
-    goldens = load_goldens(GOLDEN_PATH)
+    goldens = select_goldens(load_goldens(GOLDEN_PATH), limit=limit, ids=ids, seed=0, stratify_key="source")
+    judge = get_judge()
 
     test_cases = []
+    errors = 0
     for g in goldens:
         result = agent_target.invoke(g["question"])
+        if result.error:
+            errors += 1
+            continue
         test_cases.append(LLMTestCase(
             input=g["question"],
             actual_output=result.answer,
@@ -52,7 +65,7 @@ def run(agent_target: AgentTarget | None = None):
             Rubric(score_range=(0, 4),  expected_outcome="Contains a factual error."),
         ],
         evaluation_params=[LLMTestCaseParams.INPUT, LLMTestCaseParams.ACTUAL_OUTPUT, LLMTestCaseParams.EXPECTED_OUTPUT],
-        threshold=THRESHOLD, model=JUDGE_MODEL, strict_mode=False,
+        threshold=THRESHOLD, model=judge, strict_mode=False,
     )
 
     completeness = GEval(
@@ -70,13 +83,15 @@ def run(agent_target: AgentTarget | None = None):
             Rubric(score_range=(0, 4),  expected_outcome="Misses several key points."),
         ],
         evaluation_params=[LLMTestCaseParams.INPUT, LLMTestCaseParams.ACTUAL_OUTPUT, LLMTestCaseParams.EXPECTED_OUTPUT],
-        threshold=THRESHOLD, model=JUDGE_MODEL, strict_mode=False,
+        threshold=THRESHOLD, model=judge, strict_mode=False,
     )
 
-    result = evaluate(test_cases=test_cases, metrics=[correctness, completeness])
+    result = run_evaluate(test_cases=test_cases, metrics=[correctness, completeness]) if test_cases else []
     summary = summarize_by_metric(result)
-    flat = flatten_summary("application", summary)
-    print_summary("application", flat)
+    flat = flatten_summary(summary)
+    flat["error_rate"] = errors / len(goldens) if goldens else 0.0
+    if verbose:
+        print_summary("application", summary)
     return flat
 
 

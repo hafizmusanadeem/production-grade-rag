@@ -1,10 +1,8 @@
 ﻿import inspect
 from types import SimpleNamespace
 
-from evals.compare import compare, classify
-from evals.metric_registry import rule_for
-from evals.eval_files import retrieval_metrics
-from evals.eval_files import eval_rag_pipeline, eval_application
+from evals.compare import compare
+from evals.eval_files import eval_application, eval_rag_pipeline, retrieval_metrics
 
 print("\n===== 1. COMPARE DECISION TESTS =====")
 

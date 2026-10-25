@@ -1,0 +1,182 @@
+[
+  {
+    "id": "u001",
+    "question": "How do I upgrade a kubeadm-provisioned control plane from 1.30 to 1.31?",
+    "expected": "DECLINE_NO_CONTEXT",
+    "tags": [
+      "lang:en"
+    ],
+    "status": "draft"
+  },
+  {
+    "id": "u002",
+    "question": "How is mutual TLS (mTLS) enforced between pods by Istio?",
+    "expected": "DECLINE_NO_CONTEXT",
+    "tags": [
+      "lang:en"
+    ],
+    "status": "draft"
+  },
+  {
+    "id": "u003",
+    "question": "What are the internals of the CSI driver attach/detach sequence?",
+    "expected": "DECLINE_NO_CONTEXT",
+    "tags": [
+      "lang:en"
+    ],
+    "status": "draft"
+  },
+  {
+    "id": "u004",
+    "question": "How do I take an etcd snapshot and restore it on a new control plane?",
+    "expected": "DECLINE_NO_CONTEXT",
+    "tags": [
+      "lang:en"
+    ],
+    "status": "draft"
+  },
+  {
+    "id": "u005",
+    "question": "How do I install cert-manager with Jetstack Helm repository?",
+    "expected": "DECLINE_NO_CONTEXT",
+    "tags": [
+      "lang:en"
+    ],
+    "status": "draft"
+  },
+  {
+    "id": "u006",
+    "question": "How does OPA Gatekeeper validate admission policies against a ConstraintTemplate?",
+    "expected": "DECLINE_NO_CONTEXT",
+    "tags": [
+      "lang:en"
+    ],
+    "status": "draft"
+  },
+  {
+    "id": "u007",
+    "question": "How do I set up the Kubernetes dashboard behind an Ingress?",
+    "expected": "DECLINE_NO_CONTEXT",
+    "tags": [
+      "lang:en"
+    ],
+    "status": "draft"
+  },
+  {
+    "id": "u008",
+    "question": "What does a Calico CNI BGP configuration look like?",
+    "expected": "DECLINE_NO_CONTEXT",
+    "tags": [
+      "lang:en"
+    ],
+    "status": "draft"
+  },
+  {
+    "id": "u009",
+    "question": "How do I build a Cluster API management cluster for AWS?",
+    "expected": "DECLINE_NO_CONTEXT",
+    "tags": [
+      "lang:en"
+    ],
+    "status": "draft"
+  },
+  {
+    "id": "u010",
+    "question": "How is the Kubernetes node problem detector configured?",
+    "expected": "DECLINE_NO_CONTEXT",
+    "tags": [
+      "lang:en"
+    ],
+    "status": "draft"
+  },
+  {
+    "id": "u011",
+    "question": "How do I enable the Windows HostProcess containers feature gate?",
+    "expected": "DECLINE_NO_CONTEXT",
+    "tags": [
+      "lang:en"
+    ],
+    "status": "draft"
+  },
+  {
+    "id": "u012",
+    "question": "What is the reconciliation loop of the cloud-controller-manager?",
+    "expected": "DECLINE_NO_CONTEXT",
+    "tags": [
+      "lang:en"
+    ],
+    "status": "draft"
+  },
+  {
+    "id": "u013",
+    "question": "How do I configure a Kustomize overlay for multiple environments?",
+    "expected": "DECLINE_NO_CONTEXT",
+    "tags": [
+      "lang:en"
+    ],
+    "status": "draft"
+  },
+  {
+    "id": "u014",
+    "question": "How is the Vertical Pod Autoscaler admission controller installed?",
+    "expected": "DECLINE_NO_CONTEXT",
+    "tags": [
+      "lang:en"
+    ],
+    "status": "draft"
+  },
+  {
+    "id": "u015",
+    "question": "How do I deploy the NVIDIA GPU Operator with MIG support?",
+    "expected": "DECLINE_NO_CONTEXT",
+    "tags": [
+      "lang:en"
+    ],
+    "status": "draft"
+  },
+  {
+    "id": "u016",
+    "question": "What is the on-disk format of an etcd WAL segment?",
+    "expected": "DECLINE_NO_CONTEXT",
+    "tags": [
+      "lang:en"
+    ],
+    "status": "draft"
+  },
+  {
+    "id": "u017",
+    "question": "How do I use kubectl diff server-side apply for a three-way merge?",
+    "expected": "DECLINE_NO_CONTEXT",
+    "tags": [
+      "lang:en"
+    ],
+    "status": "draft"
+  },
+  {
+    "id": "u018",
+    "question": "How is dynamic Kubernetes auditing configured to stream to a webhook?",
+    "expected": "DECLINE_NO_CONTEXT",
+    "tags": [
+      "lang:en"
+    ],
+    "status": "draft"
+  },
+  {
+    "id": "u019",
+    "question": "How do I set up Sigma-based rule evaluation in Falco for pods?",
+    "expected": "DECLINE_NO_CONTEXT",
+    "tags": [
+      "lang:en"
+    ],
+    "status": "draft"
+  },
+  {
+    "id": "u020",
+    "question": "How do I bootstrap a Kubernetes scheduler using a custom scheduling framework?",
+    "expected": "DECLINE_NO_CONTEXT",
+    "tags": [
+      "lang:en"
+    ],
+    "status": "draft"
+  }
+]

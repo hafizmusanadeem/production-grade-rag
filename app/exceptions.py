@@ -63,3 +63,15 @@ class EmptyLLMResponseError(LLMServiceError):
     public_message = (
         "The language model returned an empty response. Please try again."
     )
+
+
+class FeedbackError(RAGError):
+    status_code = 503
+    code = "feedback_unavailable"
+    public_message = "Feedback could not be saved right now. Please try again."
+
+
+class InputRejectedError(RAGError):
+    status_code = 400
+    code = "input_rejected"
+    public_message = "The request contains disallowed input."

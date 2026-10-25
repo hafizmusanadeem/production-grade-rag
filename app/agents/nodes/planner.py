@@ -1,15 +1,18 @@
-import logfire
 import re
+from time import perf_counter
 
-from app.gateway import get_langchain_llm
+import logfire
+
+from app.agents.prompts import build_planner_prompt
 from app.agents.state import (
-    AgentState,
     INTENT_CONVERSATIONAL,
     INTENT_OUT_OF_SCOPE,
     INTENT_TECHNICAL,
+    AgentState,
 )
 from app.exceptions import LLMServiceError
-
+from app.gateway import get_langchain_llm
+from app.gateway.client import request_extra_headers
 
 llm = get_langchain_llm(feature = "planner")
 
@@ -62,42 +65,19 @@ def planner_node(state: AgentState):
 
     user_message = state["messages"][-1]["content"] if state["messages"] else ""
 
-    prompt = f"""
-    You are the intake Planner for a Kubernetes documentation assistant.
-    The assistant ONLY answers questions about Kubernetes and closely related
-    cloud-native topics (containers, Pods, Jobs/CronJobs, Deployments, networking,
-    storage, RBAC, autoscaling, Helm, monitoring such as Prometheus, and similar).
-    Messages may be written in any language, including Roman Urdu or Hinglish.
-
-    CONVERSATION HISTORY:
-    {history}
-
-    LATEST MESSAGE:
-    "{user_message}"
-
-    Classify the latest message and output exactly ONE of the following:
-
-    1. CONVERSATIONAL
-       The message is a greeting/thanks, or can be answered using ONLY the
-       conversation history above (e.g., "what is my name", "summarize what you just said").
-
-    2. OUT_OF_SCOPE
-       The message is not about Kubernetes or related cloud-native tooling and is not
-       answerable from the history. Examples: geography, politics, sports, general
-       trivia, personal advice, writing poems, unrelated programming help.
-
-    3. A search query
-       The message is a Kubernetes/cloud-native question that needs documentation.
-       Output a refined search query written as plain natural language: only keywords
-       or a short phrase. Do NOT use search operators (site:, inurl:, filetype:),
-       quotation marks, or boolean words.
-
-    Output ONLY 'CONVERSATIONAL', 'OUT_OF_SCOPE', or the search query. No explanation.
-    """
+    prompt = build_planner_prompt(history, user_message)
 
     with logfire.span("Planner Decision", history_messages=len(state["messages"]) - 1):
         try:
-            raw = _as_text(llm.invoke(prompt).content)
+            t0 = perf_counter()
+            response = llm.invoke(prompt, extra_headers=request_extra_headers())
+            planner_ms = (perf_counter() - t0) * 1000
+            raw = _as_text(response.content)
+            meta = getattr(response, "usage_metadata", None) or {}
+            model_meta = getattr(response, "response_metadata", None) or {}
+            usage = {"planner_prompt_tokens": meta.get("input_tokens", 0),
+                     "planner_completion_tokens": meta.get("output_tokens", 0),
+                     "planner_model": str(model_meta.get("model_name", "unknown") or "unknown")}
         except Exception as exc:
             logfire.exception("Planner LLM call failed")
             raise LLMServiceError(f"Planner LLM call failed: {exc}") from exc
@@ -117,7 +97,7 @@ def planner_node(state: AgentState):
             "intent": INTENT_OUT_OF_SCOPE,
             "current_query": "",
             "status": "Out of scope - not a Kubernetes question",
-            "plan": ["Intent: Out of scope", "Retrieval: Skipped"],
+            "plan": ["Intent: Out of scope", "Retrieval: Skipped"], "timings_ms": {**state.get("timings_ms", {}), "planner": planner_ms}, "usage": {**state.get("usage", {}), **usage}, "sources": [], "declined": False,
         }
 
     if intent == INTENT_CONVERSATIONAL:
@@ -125,7 +105,7 @@ def planner_node(state: AgentState):
             "intent": INTENT_CONVERSATIONAL,
             "current_query": "",
             "status": "Handling conversationally (by using memory)",
-            "plan": ["Intent: Conversational/Memory", "Retrieval: Skipped"],
+            "plan": ["Intent: Conversational/Memory", "Retrieval: Skipped"], "timings_ms": {**state.get("timings_ms", {}), "planner": planner_ms}, "usage": {**state.get("usage", {}), **usage}, "sources": [], "declined": False,
         }
 
     plan = ["Intent: Technical", f"Search Term: {search_query}"]
@@ -136,4 +116,8 @@ def planner_node(state: AgentState):
         "current_query": search_query,
         "status": f"Technical research needed. Searching for: {search_query}\n",
         "plan": plan,
+        "timings_ms": {**state.get("timings_ms", {}), "planner": planner_ms},
+        "usage": {**state.get("usage", {}), **usage},
+        "sources": [],
+        "declined": False,
     }

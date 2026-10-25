@@ -19,10 +19,10 @@ from pathlib import Path
 from typing import Optional
 
 import logfire
-from app.config import validate_env_vars
-from app.observability import configure_logfire
-from app.ingestion.processor import process_file
 
+from app.config import validate_env_vars
+from app.ingestion.processor import process_file
+from app.observability import configure_logfire
 
 configure_logfire()
 
@@ -47,7 +47,7 @@ def process_single_file(file_path: str, data_dir: Optional[str] = None) -> None:
     try:
         result = process_file(file_path, data_dir=data_dir)
 
-        print(f"\n✅ Processing Complete!")
+        print("\n✅ Processing Complete!")
         print(f"   Chunks created: {result.chunk_count}")
         print(f"   Local storage: {result.local_path}")
         print(f"   Qdrant collection: {result.qdrant_collection}")
@@ -62,7 +62,7 @@ def process_single_file(file_path: str, data_dir: Optional[str] = None) -> None:
         sys.exit(1)
 
 
-def process_directory(dir_path: str, data_dir: Optional[str] = None) -> None:
+def process_directory(dir_path: str, data_dir: Optional[str] = None, force: bool = False) -> None:
     """
     Process all supported files in a directory.
 
@@ -81,7 +81,7 @@ def process_directory(dir_path: str, data_dir: Optional[str] = None) -> None:
 
     try:
         processor = BatchProcessor(data_dir=data_dir)
-        processor.process_directory(directory)
+        processor.process_directory(directory, force=force)
     except ValueError as e:
         print(f"❌ Error: {e}")
         sys.exit(1)
@@ -151,9 +151,11 @@ def main() -> None:
             sys.exit(1)
         dir_path = sys.argv[2]
         data_dir = None
-        if len(sys.argv) > 3 and sys.argv[3] == "--data-dir":
-            data_dir = sys.argv[4] if len(sys.argv) > 4 else None
-        process_directory(dir_path, data_dir=data_dir)
+        force = "--force" in sys.argv[3:]
+        if "--data-dir" in sys.argv[3:]:
+            index = sys.argv.index("--data-dir")
+            data_dir = sys.argv[index + 1] if index + 1 < len(sys.argv) else None
+        process_directory(dir_path, data_dir=data_dir, force=force)
 
     else:
         print(f"Error: Unknown command '{command}'")

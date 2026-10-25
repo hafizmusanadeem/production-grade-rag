@@ -10,17 +10,17 @@ Usage:
 
 import argparse
 import json
-import logfire
 import sys
 from dataclasses import asdict, dataclass
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Optional
 
-from app.observability import configure_logfire
+import logfire
+
 from app.config import settings, validate_env_vars
 from app.ingestion.processor import IngestionProcessor
-
+from app.observability import configure_logfire
 
 configure_logfire()
 @dataclass
@@ -70,6 +70,7 @@ class BatchProcessor:
         self,
         directory: Path,
         resume_from: Optional[Path] = None,
+        force: bool = False,
     ) -> BatchProcessingReport:
         """Process all supported files in a directory."""
 
@@ -98,20 +99,9 @@ class BatchProcessor:
 
         processed_files = self._get_successful_paths(previous_report)
 
-        embedding_files = {
-            path.stem.removesuffix(".embeddings")
-            for path in self.processor.embeddings_dir.glob("*.embeddings.json")
-        }
-
-        for file_path in files:
-            if file_path.stem in embedding_files:
-                processed_files.add(str(file_path.resolve()))
-
-        logfire.info(
-            "Local embedding checkpoints detected",
-            embedding_file_count=len(embedding_files),
-            skipped_file_count=len(processed_files),
-        )
+        if force:
+            processed_files = set()
+        logfire.info("Checkpoint lookup uses content/config hashes", force=force)
 
         start_time = datetime.now(UTC)
         current_stats: list[ProcessingStats] = []
@@ -127,6 +117,12 @@ class BatchProcessor:
         for index, file_path in enumerate(files, start=1):
             resolved_path = str(file_path.resolve())
 
+            checkpoint = self.processor.checkpoint_path(file_path)
+            if not force and checkpoint.exists() and resolved_path not in processed_files:
+                current_stats.append(ProcessingStats(file_name=file_path.name, source_path=resolved_path,
+                    file_size_kb=file_path.stat().st_size / 1024, status="skipped",
+                    error_message="skipped_checkpoint", local_path=str(checkpoint)))
+                continue
             if resolved_path in processed_files:
                 logfire.info(
                     "File skipped",
@@ -533,6 +529,8 @@ def build_argument_parser() -> argparse.ArgumentParser:
         help="Resume from a previous JSON processing report.",
     )
 
+    parser.add_argument("--force", action="store_true",
+                        help="Reprocess files even when a matching checkpoint exists.")
     parser.add_argument(
         "--data-dir",
         type=Path,
@@ -571,9 +569,7 @@ def main() -> int:
 
         processor = BatchProcessor(data_dir=str(args.data_dir))
 
-        report = processor.process_directory(
-            directory=args.directory,
-        )
+        report = processor.process_directory(directory=args.directory, force=args.force)
 
         if args.output:
             save_report(report, args.output)

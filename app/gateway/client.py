@@ -1,8 +1,23 @@
-import logfire
-from portkey_ai import Portkey, createHeaders, PORTKEY_GATEWAY_URL
+from contextvars import ContextVar
+
 from langchain_openai import ChatOpenAI
+from portkey_ai import PORTKEY_GATEWAY_URL, Portkey, createHeaders
 
 from app.config import settings
+
+_bypass_cache = ContextVar("bypass_cache", default=False)
+
+
+def set_bypass_cache(value: bool):
+    return _bypass_cache.set(bool(value))
+
+
+def reset_bypass_cache(token):
+    _bypass_cache.reset(token)
+
+
+def request_extra_headers():
+    return {"x-portkey-cache-force-refresh": "true"} if _bypass_cache.get() else {}
 
 
 # Production gateway config:

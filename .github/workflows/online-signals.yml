@@ -1,0 +1,63 @@
+name: online-signals
+
+on:
+  schedule:
+    - cron: "0 6 * * *"      # daily at 6 AM UTC, after the nightly evals
+
+permissions:
+  contents: read
+  issues: write
+
+concurrency:
+  group: online-signals
+  cancel-in-progress: false
+
+jobs:
+  signals:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+
+      - name: Install from lockfile
+        run: uv sync --frozen --extra eval
+
+      - name: Compute signals
+        id: signals
+        env:
+          LANGSMITH_API_KEY: ${{ secrets.LANGSMITH_API_KEY }}
+          SLO_E2E_P95_MS: ${{ vars.SLO_E2E_P95_MS || '3000' }}
+        run: |
+          set +e
+          python -m evals.online.signals --hours 24 --slo-ms "$SLO_E2E_P95_MS" | tee signals.txt
+          code=${PIPESTATUS[0]}
+          set -e
+          echo "code=$code" >> "$GITHUB_OUTPUT"
+          cat signals.txt >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Open or update the online-signals issue
+        if: steps.signals.outputs.code != '0'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          title="Online signals alert: $(date -u +%Y-%m-%d)"
+          existing=$(gh issue list --label online-signals --state open \
+            --json number,title --jq "map(select(.title | startswith(\"Online signals alert\"))) | .[0].number // empty")
+          body_file=$(mktemp)
+          {
+            echo "### Signals over the last 24h"
+            echo
+            cat signals.txt
+            echo
+            echo "Run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          } > "$body_file"
+          if [ -n "$existing" ]; then
+            gh issue comment "$existing" --body-file "$body_file"
+          else
+            gh issue create --title "$title" --label online-signals --body-file "$body_file"
+          fi

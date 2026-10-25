@@ -33,3 +33,10 @@ def _configure_without_sending(*args, **kwargs):
 
 
 logfire.configure = _configure_without_sending
+
+
+def pytest_collection_modifyitems(config, items):
+    import pytest
+    for item in items:
+        if item.get_closest_marker("eval") is None:
+            item.add_marker(pytest.mark.unit)

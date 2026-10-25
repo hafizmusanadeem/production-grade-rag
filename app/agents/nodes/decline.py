@@ -4,7 +4,7 @@ and cannot be talked out of by the user's wording.
 """
 import logfire
 
-from app.agents.state import AgentState, INTENT_OUT_OF_SCOPE
+from app.agents.state import INTENT_OUT_OF_SCOPE, AgentState
 
 OUT_OF_SCOPE_MESSAGE = (
     "I'm a Kubernetes documentation assistant, so I can only help with Kubernetes "
@@ -34,4 +34,6 @@ def decline_node(state: AgentState):
         "plan": state["plan"] + [step],
         # Keep the exchange in thread memory so follow-ups have context.
         "messages": [{"role": "assistant", "content": message}],
+        "declined": True, "timings_ms": {**state.get("timings_ms", {})},
+        "usage": {**state.get("usage", {})}, "sources": [],
     }

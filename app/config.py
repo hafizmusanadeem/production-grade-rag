@@ -1,6 +1,6 @@
 import os
-from dotenv import load_dotenv
 
+from dotenv import load_dotenv
 
 load_dotenv()
 
@@ -59,7 +59,7 @@ RETRIEVAL_LIMIT_K = 10   # candidates pulled from Qdrant
 RERANK_TOP_N = 5         # chunks kept after reranking
 
 
-def validate_env_vars() -> None:
+def validate_env_vars(*, require_logfire: bool = True, require_llm: bool = True) -> None:
     required = [
         "GEMINI_API_KEY",
         "QDRANT_API_KEY",
@@ -77,11 +77,12 @@ def validate_env_vars() -> None:
         "PORTKEY_CONFIG_ID"
     ]
 
-    missing = [
-        name
-        for name in required
-        if not getattr(settings, name)
-    ]
+    if not require_logfire:
+        required = [name for name in required if name != "LOGFIRE_TOKEN"]
+    if not require_llm:
+        llm_names = {"PORTKEY_API_KEY", "PORTKEY_SLUG_1", "PORTKEY_SLUG_2", "PORTKEY_CONFIG_ID"}
+        required = [name for name in required if name not in llm_names]
+    missing = [name for name in required if not getattr(settings, name)]
 
     if missing:
         raise ValueError(

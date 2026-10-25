@@ -5,32 +5,111 @@ on:
     paths:
       - "app/**"
       - "evals/**"
+      - "pyproject.toml"
+      - ".github/workflows/**"
+
+permissions:
+  contents: read
+  pull-requests: write
+
+concurrency:
+  group: evals-pr-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
 
 jobs:
   evals-check:
     runs-on: ubuntu-latest
+    # Forks have no secrets; guard against a fork PR failing on missing keys.
+    if: github.event.pull_request.head.repo.full_name == github.repository.full_name
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
-      - name: Set up Python
-        uses: actions/setup-python@v5
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v5
         with:
-          python-version: "3.11"
-      - name: Install deps
-        run: |
-          pip install --upgrade pip
-          pip install -e .
+          enable-cache: true
+
+      - name: Install from lockfile
+        run: uv sync --frozen --extra eval
+
+      - name: Warn if the baseline is stale
+        env:
+          EVAL_JUDGE_MODEL: ${{ vars.EVAL_JUDGE_MODEL }}
+        run: python -m evals.tools.baseline_stale_check --baseline baselines/baseline.json
+
       - name: Baseline must exist
         id: baseline
-        run: test -f baselines/baseline.json && echo "exists=true" || echo "exists=false"
-      - name: Run smoke suite (20 goldens, limited judge sample)
+        run: test -f baselines/baseline.json && echo "exists=true" >> "$GITHUB_OUTPUT" || echo "exists=false" >> "$GITHUB_OUTPUT"
+
+      - name: Run smoke suite
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          QDRANT_API_KEY: ${{ secrets.QDRANT_API_KEY }}
+          QDRANT_CLUSTER_ENDPOINT: ${{ secrets.QDRANT_CLUSTER_ENDPOINT }}
+          QDRANT_COLLECTION: ${{ vars.QDRANT_COLLECTION || 'rag-eval-collection' }}
+          PORTKEY_API_KEY: ${{ secrets.PORTKEY_API_KEY }}
+          PORTKEY_SLUG_1: ${{ secrets.PORTKEY_SLUG_1 }}
+          PORTKEY_SLUG_2: ${{ secrets.PORTKEY_SLUG_2 }}
+          PORTKEY_CONFIG_ID: ${{ secrets.PORTKEY_CONFIG_ID }}
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+          EVAL_JUDGE_MODEL: ${{ vars.EVAL_JUDGE_MODEL }}
+          LOGFIRE_TOKEN: ${{ secrets.LOGFIRE_TOKEN }}
+          LANGSMITH_API_KEY: ${{ secrets.LANGSMITH_API_KEY }}
         run: python -m evals.run_suite --limit 20 --quiet
+
       - name: Compare against baseline
+        id: compare
         if: steps.baseline.outputs.exists == 'true'
+        env:
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+          EVAL_JUDGE_MODEL: ${{ vars.EVAL_JUDGE_MODEL }}
+          LOGFIRE_TOKEN: ${{ secrets.LOGFIRE_TOKEN }}
         run: |
-          python -m evals.compare
-          echo "exit=$?" >> $GITHUB_STEP_SUMMARY
+          set +e
+          python -m evals.compare --markdown > compare.md
+          code=$?
+          set -e
+          echo "code=$code" >> "$GITHUB_OUTPUT"
+          cat compare.md >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Post or update the PR comment
+        if: steps.baseline.outputs.exists == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          marker="<!-- evals-compare -->"
+          existing=$(gh api "repos/${{ github.repository }}/issues/${{ github.event.pull_request.number }}/comments" \
+            --jq "map(select(.body | contains(\"$marker\"))) | .[0].id // empty")
+          body_file=$(mktemp)
+          {
+            cat compare.md
+            echo
+            echo "FAIL blocks this PR. REVIEW needs a human decision before merge."
+          } > "$body_file"
+          if [ -n "$existing" ]; then
+            gh api --method PATCH "repos/${{ github.repository }}/issues/comments/$existing" \
+              -F body=@"$body_file" > /dev/null
+          else
+            gh api --method POST "repos/${{ github.repository }}/issues/${{ github.event.pull_request.number }}/comments" \
+              -F body=@"$body_file" > /dev/null
+          fi
+
+      - name: Block on FAIL
+        if: steps.compare.outputs.code == '1'
+        run: |
+          echo "::error::Evals regressed: a gate failed (exit 1). See the evals-compare comment."
+          exit 1
+
+      - name: Warn on REVIEW
+        if: steps.compare.outputs.code == '2'
+        run: echo "::warning::Evals flagged a guardrail regression (exit 2). A human must review."
+
       - name: Upload candidate artifact
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: evals-candidate
           path: baselines/candidate.json
+          if-no-files-found: warn
+          retention-days: 14

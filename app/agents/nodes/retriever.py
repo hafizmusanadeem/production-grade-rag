@@ -1,83 +1,43 @@
 import logfire
 
 from app.agents.state import AgentState
-from app.config import settings, RETRIEVAL_LIMIT_K, RERANK_TOP_N
-from app.exceptions import RAGError, RerankError, RetrievalError
-from app.services.retrieval.qdrant_service import search_qdrant
-from app.services.retrieval.reranker import rerank_documents
+from app.config import RERANK_TOP_N, RETRIEVAL_LIMIT_K, settings
+from app.services.retrieval.retrieval_pipeline import QueryRequest, RetrievalPipeline
+
+pipeline = RetrievalPipeline()
+
+
+def _build_sources(chunks):
+    """Per-chunk source metadata for the eval suite and the /query response.
+
+    FlashRank returns numpy.float32 scores, which LangGraph's MemorySaver cannot
+    msgpack-serialise when checkpointing state -- coerce to plain floats.
+    """
+    return [{"file_name": r.metadata.get("file_name", ""), "chunk_id": r.chunk_id,
+             "rerank_score": float(r.rerank_score), "original_score": float(r.original_score)}
+            for r in chunks]
 
 
 def retrieve_node(state: AgentState):
-    """
-    Performs vector search and semantic reranking for technical queries.
-
-    Failure handling:
-      - Qdrant / embedding failure  -> RetrievalError (HTTP 503)
-      - Reranker failure            -> RerankError    (HTTP 503)
-      - Nothing relevant found      -> returns documents=[]; the graph routes to the
-                                       decline node instead of letting the LLM guess.
-    """
-
     query = state["current_query"]
-
+    req = QueryRequest(query=query, limit_k=RETRIEVAL_LIMIT_K, top_n=RERANK_TOP_N,
+                       use_reranker=True, min_rerank_score=settings.RERANK_MIN_SCORE)
     with logfire.span("Knowledge Retrieval"):
-        logfire.info("Searching Qdrant for", query=query)
-        try:
-            raw_results = search_qdrant(query=query, limit_k=RETRIEVAL_LIMIT_K)
-        except RAGError:
-            raise
-        except Exception as exc:
-            raise RetrievalError(f"Vector search failed: {exc}") from exc
-
-        logfire.info("Retrieved candidates from Vector DB", candidate_count=len(raw_results), vector_db="Qdrant")
-
-        if not raw_results:
-            logfire.warn("No candidates returned from Qdrant", query=query)
-            return {
-                "documents": [],
-                "status": "No documents found.",
-                "plan": state["plan"] + ["Context: none found"],
-            }
-
-        with logfire.span("Semantic Reranking"):
-            try:
-                reranked = rerank_documents(query=query, documents=raw_results, top_n=RERANK_TOP_N)
-            except RAGError:
-                raise
-            except Exception as exc:
-                raise RerankError(f"Reranking failed: {exc}") from exc
-
-            logfire.info("Reranking complete", reranked_count=len(reranked))
-
-        top_score = max((doc.rerank_score for doc in reranked), default=None)
-        relevant = [doc for doc in reranked if doc.rerank_score >= settings.RERANK_MIN_SCORE]
-
-        # Log the score so RERANK_MIN_SCORE can be calibrated from real traffic.
-        logfire.info(
-            "Relevance filter applied",
-            top_rerank_score=top_score,
-            threshold=settings.RERANK_MIN_SCORE,
-            kept=len(relevant),
-            dropped=len(reranked) - len(relevant),
-        )
-
-        if not relevant:
-            logfire.warn(
-                "No chunk cleared the relevance threshold; declining instead of answering ungrounded",
-                query=query,
-                top_rerank_score=top_score,
-                threshold=settings.RERANK_MIN_SCORE,
-            )
-            return {
-                "documents": [],
-                "status": "No relevant documents found.",
-                "plan": state["plan"] + ["Context: none relevant"],
-            }
-
-        formatted_docs = [f"CONTENT: {doc.page_content}" for doc in relevant]
-
-    return {
-        "documents": formatted_docs,
-        "status": "Found technical context.",
-        "plan": state["plan"] + ["Context Retrieved"],
-    }
+        response = pipeline.process_query(req)
+        logfire.info("Relevance filter applied", top_rerank_score=response.top_rerank_score,
+                     threshold=settings.RERANK_MIN_SCORE, kept=len(response.results),
+                     dropped=max(response.retrieved_count - len(response.results), 0))
+    sources = _build_sources(response.results)
+    timings = {**state.get("timings_ms", {}), **response.timings_ms}
+    if response.retrieved_count == 0:
+        return {"documents": [], "sources": [], "timings_ms": timings,
+                "status": "No documents found.", "plan": state["plan"] + ["Context: none found"]}
+    if not response.results:
+        logfire.warn("No chunk cleared the relevance threshold; declining instead of answering ungrounded",
+                     query=query, top_rerank_score=response.top_rerank_score,
+                     threshold=settings.RERANK_MIN_SCORE)
+        return {"documents": [], "sources": [], "timings_ms": timings,
+                "status": "No relevant documents found.", "plan": state["plan"] + ["Context: none relevant"]}
+    docs = [f"CONTENT: {r.page_content}" for r in response.results]
+    return {"documents": docs, "sources": sources, "timings_ms": timings,
+            "status": "Found technical context.", "plan": state["plan"] + ["Context Retrieved"]}

@@ -3,6 +3,7 @@ from typing import Any
 
 import logfire
 from langchain_text_splitters import RecursiveCharacterTextSplitter
+
 from app.config import settings
 from app.ingestion.loaders.base import LoadedDocument
 

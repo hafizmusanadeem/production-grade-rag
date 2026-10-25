@@ -12,9 +12,8 @@ import logfire
 from qdrant_client import QdrantClient
 from qdrant_client.http import models as qmodels
 
-from app.config import settings, validate_env_vars
+from app.config import settings
 from app.services.retrieval.embeddings import EmbeddedChunk, embed_query
-
 
 # ---------------------------------------------------------------------------
 # Data models
@@ -110,7 +109,11 @@ def ensure_collection(
                 f"Qdrant collection '{collection_name}' expects vector size "
                 f"{existing_size}, but embeddings have size {vector_size}"
             )
-
+        try:
+            client.create_payload_index(collection_name=collection_name, field_name="source",
+                                        field_schema=qmodels.PayloadSchemaType.KEYWORD)
+        except Exception as exc:
+            logfire.warning("Could not ensure source payload index", error=str(exc))
         return
 
     try:
@@ -149,6 +152,11 @@ def ensure_collection(
                 f"Qdrant collection '{collection_name}' expects vector size "
                 f"{vectors_config.size}, but embeddings have size {vector_size}"
             )
+    try:
+        client.create_payload_index(collection_name=collection_name, field_name="source",
+                                    field_schema=qmodels.PayloadSchemaType.KEYWORD)
+    except Exception as exc:
+        logfire.warning("Could not ensure source payload index", error=str(exc))
 
 
 # ---------------------------------------------------------------------------
@@ -291,7 +299,7 @@ def _upsert_batch_with_retry(
 # Storage
 # ---------------------------------------------------------------------------
 
-def store_embeddings(chunks: list[EmbeddedChunk]) -> int:
+def store_embeddings(chunks: list[EmbeddedChunk], *, replace_source: str | None = None) -> int:
     """
     Store embedded chunks in Qdrant using bounded batches.
 
@@ -322,8 +330,12 @@ def store_embeddings(chunks: list[EmbeddedChunk]) -> int:
         vector_size=vector_size,
     )
 
+    if replace_source:
+        client.delete(collection_name=collection_name,
+                      points_selector=qmodels.FilterSelector(filter=qmodels.Filter(must=[
+                          qmodels.FieldCondition(key="source", match=qmodels.MatchValue(value=replace_source))
+                      ])), wait=True)
     points = _build_points(chunks)
-
     total_points = len(points)
     batch_size = settings.QDRANT_UPSERT_BATCH_SIZE
     total_batches = (

@@ -5,6 +5,7 @@ from time import perf_counter
 from typing import TYPE_CHECKING, Any
 
 import logfire
+
 from app.services.retrieval.qdrant_service import RetrievedChunk
 
 if TYPE_CHECKING:

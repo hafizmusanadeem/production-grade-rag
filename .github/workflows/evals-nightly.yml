@@ -5,26 +5,99 @@ on:
     - cron: "0 2 * * *"      # daily at 2 AM UTC
   workflow_dispatch:
 
+permissions:
+  contents: read
+  issues: write
+
 jobs:
   nightly-evals:
     runs-on: ubuntu-latest
+    timeout-minutes: 90
     steps:
       - uses: actions/checkout@v4
-      - name: Set up Python
-        uses: actions/setup-python@v5
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v5
         with:
-          python-version: "3.11"
-      - name: Install deps
-        run: |
-          pip install --upgrade pip
-          pip install -e .
-      - name: Baseline must exist
-        id: baseline
-        run: test -f baselines/baseline.json && echo "exists=true" || echo "exists=false"
+          enable-cache: true
+
+      - name: Install from lockfile
+        run: uv sync --frozen --extra eval
+
       - name: Full suite (all goldens)
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          QDRANT_API_KEY: ${{ secrets.QDRANT_API_KEY }}
+          QDRANT_CLUSTER_ENDPOINT: ${{ secrets.QDRANT_CLUSTER_ENDPOINT }}
+          QDRANT_COLLECTION: ${{ vars.QDRANT_COLLECTION || 'rag-eval-collection' }}
+          PORTKEY_API_KEY: ${{ secrets.PORTKEY_API_KEY }}
+          PORTKEY_SLUG_1: ${{ secrets.PORTKEY_SLUG_1 }}
+          PORTKEY_SLUG_2: ${{ secrets.PORTKEY_SLUG_2 }}
+          PORTKEY_CONFIG_ID: ${{ secrets.PORTKEY_CONFIG_ID }}
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+          EVAL_JUDGE_MODEL: ${{ vars.EVAL_JUDGE_MODEL }}
+          LOGFIRE_TOKEN: ${{ secrets.LOGFIRE_TOKEN }}
+          LANGSMITH_API_KEY: ${{ secrets.LANGSMITH_API_KEY }}
         run: python -m evals.run_suite --quiet
+
       - name: Compare against baseline
-        if: steps.baseline.outputs.exists == 'true'
+        id: compare
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          QDRANT_API_KEY: ${{ secrets.QDRANT_API_KEY }}
+          QDRANT_CLUSTER_ENDPOINT: ${{ secrets.QDRANT_CLUSTER_ENDPOINT }}
+          QDRANT_COLLECTION: ${{ vars.QDRANT_COLLECTION || 'rag-eval-collection' }}
+          PORTKEY_API_KEY: ${{ secrets.PORTKEY_API_KEY }}
+          PORTKEY_SLUG_1: ${{ secrets.PORTKEY_SLUG_1 }}
+          PORTKEY_SLUG_2: ${{ secrets.PORTKEY_SLUG_2 }}
+          PORTKEY_CONFIG_ID: ${{ secrets.PORTKEY_CONFIG_ID }}
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+          LOGFIRE_TOKEN: ${{ secrets.LOGFIRE_TOKEN }}
         run: |
-          python -m evals.compare
-          echo "exit=$?" >> $GITHUB_STEP_SUMMARY
+          set +e
+          python -m evals.compare --baseline baselines/baseline.json | tee compare.txt
+          code=${PIPESTATUS[0]}
+          set -e
+          echo "code=$code" >> "$GITHUB_OUTPUT"
+          head -200 compare.txt >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Fail the job on FAIL
+        if: steps.compare.outputs.code == '1'
+        run: |
+          echo "::error::Nightly evals FAILED (exit 1) -- a gate regressed. See the compare output above."
+          exit 1
+
+      - name: Open or update the evals issue
+        if: steps.compare.outputs.code == '1' || steps.compare.outputs.code == '2'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          verdict="REVIEW"
+          [ "${{ steps.compare.outputs.code }}" = "1" ] && verdict="FAIL"
+          title="Nightly eval ${verdict}: $(date -u +%Y-%m-%d)"
+          existing=$(gh issue list --label evals --state open \
+            --json number,title --jq "map(select(.title | startswith(\"Nightly eval\"))) | .[0].number // empty")
+          body_file=$(mktemp)
+          {
+            echo "### Compare (first 200 lines)"
+            echo
+            cat compare.txt
+            echo
+            echo "Run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          } > "$body_file"
+          if [ -n "$existing" ]; then
+            gh issue comment "$existing" --body-file "$body_file"
+          else
+            gh issue create --title "$title" --label evals --body-file "$body_file"
+          fi
+
+      - name: Upload artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: nightly-evals
+          path: |
+            baselines/candidate.json
+            compare.txt
+          if-no-files-found: warn
+          retention-days: 30

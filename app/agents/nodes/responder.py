@@ -1,8 +1,12 @@
+from time import perf_counter
+
 import logfire
 
-from app.gateway import portkey_client, extract_cache_status
-from app.agents.state import AgentState, INTENT_CONVERSATIONAL
+from app.agents.prompts import build_prompt
+from app.agents.state import INTENT_CONVERSATIONAL, AgentState
 from app.exceptions import EmptyLLMResponseError, LLMServiceError
+from app.gateway import extract_cache_status, portkey_client, request_extra_headers
+from app.guardrails import output_guard
 
 
 def generate_node(state: AgentState):
@@ -18,67 +22,35 @@ def generate_node(state: AgentState):
 
     is_conversational = state.get("intent") == INTENT_CONVERSATIONAL
 
-    history_str = ""
-    for msg in state["messages"][:-1]:
-        role = "User" if msg["role"] == "user" else "Assistant"
-        history_str += f"{role}: {msg['content']}\n"
-
+    history = state["messages"][:-1]
     user_msg = state["messages"][-1]["content"] if state["messages"] else ""
-
     if is_conversational:
-        logfire.info("Generating conversational response using memory.", history_message=len(state["messages"]) - 1)
-        prompt = f"""
-        You are a friendly and helpful Kubernetes documentation assistant.
-        Answer the user's latest message using ONLY the CONVERSATION HISTORY below.
-        If the message asks for something unrelated to Kubernetes that the history does
-        not cover, politely say you can only help with Kubernetes questions.
-
-        CONVERSATION HISTORY:
-        {history_str}
-
-        LATEST MESSAGE:
-        "{user_msg}"
-        """
-    else:
-        max_content_chars = 25000
-        full_context = ""
         used_docs = 0
-
+        prompt = build_prompt(user_msg, [], intent="conversational", history=history)
+    else:
+        selected_docs = []
+        used_docs = 0
+        chars = 0
         for doc in state["documents"]:
-            if len(full_context) + len(doc) < max_content_chars:
-                full_context += doc + "\n\n"
+            if chars + len(doc) < 25000:
+                selected_docs.append(doc)
+                chars += len(doc)
                 used_docs += 1
             else:
-                logfire.warn("Context truncated to fit Groq TPM limits.", used_docs=used_docs, total_docs=len(state["documents"]), max_chars=max_content_chars)
+                logfire.warn("Context truncated to fit gateway limits.", used_docs=used_docs,
+                             total_docs=len(state["documents"]), max_chars=25000)
                 break
-
-        logfire.info("Generating Technical RAG response", used_docs=used_docs, context_chars=len(full_context))
-        prompt = f"""
-        You are a Senior Kubernetes Technical Architect.
-        Answer the question using ONLY the TECHNICAL CONTEXT provided below.
-        Do not use outside knowledge. If the context does not contain the answer, say
-        that you could not find it in the documentation instead of guessing.
-        If the question is not about Kubernetes, say you can only help with Kubernetes questions.
-
-        TECHNICAL CONTEXT:
-        {full_context}
-
-        CONVERSATION HISTORY:
-        {history_str}
-
-        USER QUESTION:
-        "{user_msg}"
-        """
+        prompt = build_prompt(user_msg, selected_docs, intent="technical", history=history)
 
     with logfire.span("LLM Synthesis", mode="conversational" if is_conversational else "rag", prompt_chars=len(prompt)) as span:
         try:
+            t0 = perf_counter()
             response = portkey_client.chat.completions.create(
-                messages=[{
-                    "role": "user",
-                    "content": prompt
-                }],
-                temperature=0.1
+                messages=[{"role": "user", "content": prompt}],
+                temperature=0.1,
+                extra_headers=request_extra_headers(),
             )
+            generation_ms = (perf_counter() - t0) * 1000
         except Exception as exc:
             logfire.exception("LLM generation failed")
             raise LLMServiceError(f"LLM generation failed: {exc}") from exc
@@ -90,6 +62,10 @@ def generate_node(state: AgentState):
                 f"LLM returned no content (model={getattr(response, 'model', 'unknown')})"
             )
 
+        guarded = output_guard(content)
+        content = guarded.answer
+        if guarded.reasons:
+            logfire.warn("Output guardrail modified response", reasons=guarded.reasons)
         cache_status = extract_cache_status(response)
         usage = getattr(response, "usage", None)
 
@@ -107,9 +83,17 @@ def generate_node(state: AgentState):
         else:
             logfire.info("Response synthesized via LLM.")
 
-        return {
-            "final_answer": content,
-            "status": "Cache Hit - instant response" if is_cache_hit else "Response generated",
-            "plan": state["plan"] + ["Cache Hit"] if is_cache_hit else state["plan"],
-            "messages": [{"role": "assistant", "content": content}]
-        }
+        new_usage = {**state.get("usage", {}),
+                     "prompt_tokens": getattr(usage, "prompt_tokens", 0) if usage is not None else 0,
+                     "completion_tokens": getattr(usage, "completion_tokens", 0) if usage is not None else 0,
+                     "cache_status": cache_status,
+                     "responder_model": str(getattr(response, "model", None) or "unknown"),
+                     "context_docs_used": used_docs if not is_conversational else 0}
+        plan = state["plan"] + (["Cache Hit"] if is_cache_hit else [])
+        if guarded.reasons:
+            plan.append("Guardrail: output modified")
+        return {"final_answer": content,
+                "status": "Cache Hit - instant response" if is_cache_hit else "Response generated",
+                "plan": plan, "messages": [{"role": "assistant", "content": content}],
+                "timings_ms": {**state.get("timings_ms", {}), "generate": generation_ms},
+                "usage": new_usage, "declined": guarded.blocked}

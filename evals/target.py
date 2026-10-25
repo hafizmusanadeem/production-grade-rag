@@ -7,14 +7,15 @@ code, and whether the agent declined. This is the seam every eval hits.
 """
 import uuid
 from dataclasses import dataclass, field
-from typing import List, Optional, Dict, Any
+from time import perf_counter
+from typing import Any, Dict, List, Optional
 
 import logfire
 
 from app.agents.graph import rag_agent
-from app.agents.state import AgentState
+from app.agents.nodes.decline import NO_CONTEXT_MESSAGE, OUT_OF_SCOPE_MESSAGE
 from app.exceptions import RAGError
-from evals.config import RESPONDER_CONFIG_ID
+from app.gateway import reset_bypass_cache, set_bypass_cache
 
 
 @dataclass
@@ -49,98 +50,61 @@ class AgentTarget:
     def __init__(self, *, bypass_cache: bool = True):
         # Cache control: disable Portkey caching so repeated eval runs are honest.
         # Verify the exact header name in Portkey docs; we send force-refresh here.
-        bypass_cache = bypass_cache
+        self.bypass_cache = bypass_cache
+        self.results: list[EvalResult] = []
 
     def invoke(self, query: str, *, thread_id: Optional[str] = None,
                history: Optional[List[dict]] = None) -> EvalResult:
-        """Run the agent for one query and return a fully-populated EvalResult."""
-        # Fresh uuid per case so MemorySaver doesn't leak state between golden items.
+        result = self._invoke(query, thread_id=thread_id, history=history)
+        self.results.append(result)
+        return result
+
+    def _invoke(self, query: str, *, thread_id: Optional[str] = None,
+                history: Optional[List[dict]] = None) -> EvalResult:
         tid = thread_id or f"eval-{uuid.uuid4().hex}"
-
-        if history:
-            state = _make_state_with_history(query, history)
-        else:
-            state = _make_initial_state(query)
-
+        state = _make_state_with_history(query, history or []) if history else _make_initial_state(query)
+        started = perf_counter()
+        cache_token = set_bypass_cache(self.bypass_cache)
         try:
             result = rag_agent.invoke(state, config={"configurable": {"thread_id": tid}})
         except RAGError as exc:
-            return EvalResult(query=query, answer="", context=[],
-                              error=exc.code)
+            return EvalResult(query=query, answer="", context=[], error=exc.code,
+                              timings_ms={"total": (perf_counter() - started) * 1000})
         except Exception as exc:
-            logfire.error("AgentTarget invoke failed", error_id=str(uuid.uuid4()[:12]),
-                          error=str(exc))
-            return EvalResult(query=query, answer="", context=[],
-                              error="internal_error")
-
-        final_answer = result.get("final_answer", "") or ""
-        intent = result.get("intent", "unknown")
-        plan = result.get("plan", []) or []
-
-        raw_docs = result.get("documents", [])
-
-        # Strip the "CONTENT: " prefix that format_docs_as_text injects in retrieve_node.
+            logfire.error("AgentTarget invoke failed", error_id=uuid.uuid4().hex[:12],
+                          error=str(exc), _exc_info=exc)
+            return EvalResult(query=query, answer="", context=[], error="internal_error",
+                              timings_ms={"total": (perf_counter() - started) * 1000})
+        finally:
+            reset_bypass_cache(cache_token)
+        wall_ms = (perf_counter() - started) * 1000
+        answer = result.get("final_answer", "") or ""
         context = []
-        sources = []
-        for doc in raw_docs:
-            text = doc
+        for doc in result.get("documents", []) or []:
             if isinstance(doc, str):
-                text = doc
-            elif isinstance(doc, dict):
-                text = doc.get("page_content", str(doc))
-            if isinstance(text, str) and text.startswith("CONTENT: "):
-                text = text[len("CONTENT: "):]
-            context.append(text)
-
-            meta = {}
-            if isinstance(doc, dict):
-                meta["file_name"] = doc.get("metadata", {}).get("file_name", "")
-                meta["chunk_id"] = doc.get("chunk_id", doc.get("metadata", {}).get("chunk_id", ""))
-                meta["rerank_score"] = doc.get("rerank_score", doc.get("original_score", ""))
-                meta["original_score"] = doc.get("original_score", doc.get("score", ""))
-                sources.append(meta)
-            elif hasattr(doc, "metadata"):
-                sources.append({
-                    "file_name": doc.metadata.get("file_name", ""),
-                    "chunk_id": doc.chunk_id,
-                    "rerank_score": getattr(doc, "rerank_score", None),
-                    "original_score": getattr(doc, "original_score", None),
-                })
-
-        usage = result.get("usage", {}) or {}
-        timings = result.get("timings", {}) or {}
-
-        declined = final_answer == "" or "I'm a Kubernetes documentation assistant" in final_answer
-
-        # Fallback: if timings not populated by nodes, compute e2e total as a safe default.
-        if not timings:
-            timings_ms = {"total": 0.0}
-        else:
-            timings_ms = {k: round(v, 2) for k, v in timings.items()} if isinstance(timings, dict) else {}
-
+                context.append(doc.removeprefix("CONTENT: "))
+        timings = dict(result.get("timings_ms", {}) or {})
+        timings["total"] = wall_ms
+        declined = result.get("declined")
+        if declined is None:
+            declined = answer in (OUT_OF_SCOPE_MESSAGE, NO_CONTEXT_MESSAGE)
         return EvalResult(
-            query=query,
-            answer=final_answer,
-            context=context,
-            sources=sources,
-            intent=intent,
-            declined=declined,
-            plan=plan,
-            timings_ms=timings_ms,
-            usage=usage if isinstance(usage, dict) else {},
+            query=query, answer=answer, context=context,
+            sources=list(result.get("sources", []) or []),
+            intent=result.get("intent", "unknown"), declined=bool(declined),
+            plan=result.get("plan", []) or [], timings_ms=timings,
+            usage=dict(result.get("usage", {}) or {}),
         )
 
 
+
 def _make_state_with_history(query: str, history: List[dict]) -> dict:
-    messages = [{"role": "user", "content": query}]
-    for h in history:
-        messages.append({**h, "role": h.get("role", "user")})
-    return {
-        "messages": messages,
-        "current_query": "",
-        "intent": "",
-        "documents": [],
-        "plan": [],
-        "status": "",
-        "final_answer": "",
-    }
+    messages = []
+    for item in history:
+        if isinstance(item, dict) and item.get("role", "user") in {"user", "assistant", "system"}:
+            if isinstance(item.get("content", ""), str):
+                messages.append({"role": item.get("role", "user"), "content": item.get("content", "")})
+    messages.append({"role": "user", "content": query})
+    return {"messages": messages, "current_query": "", "intent": "", "documents": [],
+            "plan": [], "status": "", "final_answer": "", "timings_ms": {},
+            "usage": {}, "sources": [], "declined": False}

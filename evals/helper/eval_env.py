@@ -9,6 +9,10 @@ if not getattr(logfire.configure, "_eval_patched", False):
 
     def _configure_without_sending(*args, **kwargs):
         kwargs["send_to_logfire"] = False
+        # The console exporter renders progress with characters (e.g. U+2728)
+        # that crash a cp1252 Windows stdout at shutdown, which turns every
+        # otherwise-fine eval run into a non-zero exit.
+        kwargs["console"] = False
         return _original_configure(*args, **kwargs)
 
     _configure_without_sending._eval_patched = True

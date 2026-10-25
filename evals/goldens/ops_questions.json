@@ -1,0 +1,82 @@
+[
+  {
+    "id": "o001",
+    "question": "What is a Kubernetes Job?",
+    "tier": "simple",
+    "derived_from": "k007",
+    "tags": ["lang:en"],
+    "status": "draft"
+  },
+  {
+    "id": "o002",
+    "question": "What is a CronJob in Kubernetes?",
+    "tier": "simple",
+    "derived_from": "k011",
+    "tags": ["lang:en"],
+    "status": "draft"
+  },
+  {
+    "id": "o003",
+    "question": "What is etcd used for in Kubernetes?",
+    "tier": "simple",
+    "derived_from": "k058",
+    "tags": ["lang:en"],
+    "status": "draft"
+  },
+  {
+    "id": "o004",
+    "question": "What are the five fields in a cron schedule, and what values can each field use?",
+    "tier": "medium",
+    "derived_from": "k012",
+    "tags": ["lang:en"],
+    "status": "draft"
+  },
+  {
+    "id": "o005",
+    "question": "How can I stream the logs of a running job in real time?",
+    "tier": "medium",
+    "derived_from": "k105",
+    "tags": ["lang:en"],
+    "status": "draft"
+  },
+  {
+    "id": "o006",
+    "question": "Why do I need Metrics Server before testing HPA or VPA, and how do I install it?",
+    "tier": "medium",
+    "derived_from": "k130",
+    "tags": ["lang:en"],
+    "status": "draft"
+  },
+  {
+    "id": "o007",
+    "question": "How do I create the hello-job in the cluster from the YAML file?",
+    "tier": "medium",
+    "derived_from": "k110",
+    "tags": ["lang:en"],
+    "status": "draft"
+  },
+  {
+    "id": "o008",
+    "question": "How is the database-backup CronJob configured? Include its schedule, timezone, retries, timeout, and job history.",
+    "tier": "multi_chunk",
+    "derived_from": "k003",
+    "tags": ["lang:en"],
+    "status": "draft"
+  },
+  {
+    "id": "o009",
+    "question": "Can you walk me through what happens from kubectl creating a Deployment to a running Pod?",
+    "tier": "multi_chunk",
+    "derived_from": "k101",
+    "tags": ["lang:en"],
+    "status": "draft"
+  },
+  {
+    "id": "o010",
+    "question": "How do I configure a VerticalPodAutoscaler, and what update modes can I use?",
+    "tier": "multi_chunk",
+    "derived_from": "k142",
+    "tags": ["lang:en"],
+    "status": "draft"
+  }
+]

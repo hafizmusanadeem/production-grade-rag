@@ -1,4 +1,5 @@
 import logfire
+
 from app.config import settings
 
 _configured = False

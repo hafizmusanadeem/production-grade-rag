@@ -1,3 +1,4 @@
+import hashlib
 import json
 import os
 import tempfile
@@ -10,6 +11,7 @@ import logfire
 from app.config import settings
 from app.ingestion.chunking.chunker import chunk_documents
 from app.ingestion.loaders import load_document
+from app.ingestion.manifest import update_manifest
 from app.services.retrieval.embeddings import EmbeddedChunk, embed_chunks
 from app.services.retrieval.qdrant_service import store_embeddings
 
@@ -185,7 +187,7 @@ class IngestionProcessor:
         )
 
         try:
-            qdrant_points = store_embeddings(embedded_chunks)
+            qdrant_points = store_embeddings(embedded_chunks, replace_source=str(path))
         except Exception:
             logfire.exception(
                 "Qdrant persistence failed",
@@ -219,10 +221,12 @@ class IngestionProcessor:
         # This ordering is essential for batch resume correctness.
         # ------------------------------------------------------------------
 
-        local_path = self._store_locally(
-            source_path=path,
-            chunks=embedded_chunks,
-        )
+        local_path = self._store_locally(source_path=path, chunks=embedded_chunks)
+        update_manifest(self.data_dir, {"file_name": path.name,
+            "sha256": hashlib.sha256(path.read_bytes()).hexdigest(),
+            "chunk_size": settings.CHUNK_SIZE, "chunk_overlap": settings.CHUNK_OVERLAP,
+            "embedding_model": settings.GEMINI_EMBEDDING_MODEL,
+            "vector_size": len(embedded_chunks[0].embedding), "points": qdrant_points})
 
         # ------------------------------------------------------------------
         # FINAL RESULT
@@ -302,10 +306,7 @@ class IngestionProcessor:
         that could later be mistaken for a valid checkpoint.
         """
 
-        output_path = (
-            self.embeddings_dir
-            / f"{source_path.stem}.embeddings.json"
-        )
+        output_path = self.checkpoint_path(source_path)
 
         payload = {
             "source": str(source_path.resolve()),

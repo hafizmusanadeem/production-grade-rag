@@ -6,36 +6,56 @@ on:
   pull_request:
     branches: [main]
 
+permissions:
+  contents: read
+
 jobs:
-  unit-tests:
+  lint:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
-      - name: Set up Python
-        uses: actions/setup-python@v5
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v5
         with:
-          python-version: "3.11"
-      - name: Install deps (offline eval extras)
-        run: |
-          pip install --upgrade pip
-          pip install -e .
-      - name: Run unit tests
+          enable-cache: true
+
+      - name: Install from lockfile
+        run: uv sync --frozen --extra eval
+
+      - name: Ruff
+        run: ruff check .
+
+  unit-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    needs: lint
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+
+      - name: Install from lockfile
+        run: uv sync --frozen --extra eval
+
+      - name: Run unit tests (offline, no network)
         run: pytest -q tests/ -m "unit"
 
-  eval-smoke:
+  compile:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     needs: unit-tests
     steps:
       - uses: actions/checkout@v4
+
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.11"
-      - name: Install deps
-        run: |
-          pip install --upgrade pip
-          pip install -e ".[eval]"
-      - name: Smoke suite (no judge API needed for base metrics)
-        run: |
-          python -m evals.tools.noise_floor baselines/baseline.json baselines/candidate.json
-          python -m evals.compare --baseline baselines/baseline.json --candidate baselines/candidate.json || true
+
+      - name: Byte-compile every module
+        run: python -m compileall -q app evals tests frontend

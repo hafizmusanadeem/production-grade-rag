@@ -1,0 +1,230 @@
+[
+  {
+    "id": "m001",
+    "turns": [
+      {
+        "role": "user",
+        "content": "What is a Kubernetes CronJob?"
+      },
+      {
+        "role": "user",
+        "content": "What did I just ask you?"
+      }
+    ],
+    "expected_intent": "conversational",
+    "expected_behavior": "restates the CronJob question",
+    "tags": [
+      "type:multiturn",
+      "lang:en"
+    ],
+    "status": "draft"
+  },
+  {
+    "id": "m002",
+    "turns": [
+      {
+        "role": "user",
+        "content": "Which restart policies can a Job Pod use?"
+      },
+      {
+        "role": "user",
+        "content": "Which one of those is not allowed?"
+      }
+    ],
+    "expected_intent": "conversational",
+    "expected_behavior": "refers to the restart policies named in the previous turn",
+    "tags": [
+      "type:multiturn",
+      "lang:en"
+    ],
+    "status": "draft"
+  },
+  {
+    "id": "m003",
+    "turns": [
+      {
+        "role": "user",
+        "content": "How is the database-backup CronJob configured?"
+      },
+      {
+        "role": "user",
+        "content": "And what schedule does it use?"
+      }
+    ],
+    "expected_intent": "conversational",
+    "expected_behavior": "answers the follow-up from the previous turn's content",
+    "tags": [
+      "type:multiturn",
+      "lang:en"
+    ],
+    "status": "draft"
+  },
+  {
+    "id": "m004",
+    "turns": [
+      {
+        "role": "user",
+        "content": "What does the ReplicaSet Controller do?"
+      },
+      {
+        "role": "assistant",
+        "content": "It reconciles pod counts."
+      },
+      {
+        "role": "user",
+        "content": "What happens after it is created?"
+      }
+    ],
+    "expected_intent": "conversational",
+    "expected_behavior": "continues the thread from the assistant's previous answer",
+    "tags": [
+      "type:multiturn",
+      "lang:en"
+    ],
+    "status": "draft"
+  },
+  {
+    "id": "m005",
+    "turns": [
+      {
+        "role": "user",
+        "content": "How do I set parallelism in a work queue job?"
+      },
+      {
+        "role": "assistant",
+        "content": "Use the parallelism field in job.yaml."
+      },
+      {
+        "role": "user",
+        "content": "What is the recommended value?"
+      }
+    ],
+    "expected_intent": "conversational",
+    "expected_behavior": "answers the follow-up from the previous turn",
+    "tags": [
+      "type:multiturn",
+      "lang:en"
+    ],
+    "status": "draft"
+  },
+  {
+    "id": "m006",
+    "turns": [
+      {
+        "role": "user",
+        "content": "Hello!"
+      },
+      {
+        "role": "assistant",
+        "content": "Hello! Ask me about Kubernetes."
+      },
+      {
+        "role": "user",
+        "content": "Great, thanks."
+      }
+    ],
+    "expected_intent": "conversational",
+    "expected_behavior": "closes the conversation politely",
+    "tags": [
+      "type:multiturn",
+      "lang:en"
+    ],
+    "status": "draft"
+  },
+  {
+    "id": "m007",
+    "turns": [
+      {
+        "role": "user",
+        "content": "What is the difference between Indexed and NonIndexed modes?"
+      },
+      {
+        "role": "assistant",
+        "content": "Indexed gives each pod an ordinal."
+      },
+      {
+        "role": "user",
+        "content": "Can you say that again more simply?"
+      }
+    ],
+    "expected_intent": "conversational",
+    "expected_behavior": "re-explains from history",
+    "tags": [
+      "type:multiturn",
+      "lang:en"
+    ],
+    "status": "draft"
+  },
+  {
+    "id": "m008",
+    "turns": [
+      {
+        "role": "user",
+        "content": "How do I exclude a container from VPA scaling?"
+      },
+      {
+        "role": "assistant",
+        "content": "Use the resourcePolicy on the VPA."
+      },
+      {
+        "role": "user",
+        "content": "What is that field called?"
+      }
+    ],
+    "expected_intent": "conversational",
+    "expected_behavior": "restates the field named in the previous turn",
+    "tags": [
+      "type:multiturn",
+      "lang:en"
+    ],
+    "status": "draft"
+  },
+  {
+    "id": "m009",
+    "turns": [
+      {
+        "role": "user",
+        "content": "What is a Kubernetes Job design mistake?"
+      },
+      {
+        "role": "assistant",
+        "content": "Using restartPolicy: Always."
+      },
+      {
+        "role": "user",
+        "content": "Why is that a mistake?"
+      }
+    ],
+    "expected_intent": "conversational",
+    "expected_behavior": "elaborates from the previous turn",
+    "tags": [
+      "type:multiturn",
+      "lang:en"
+    ],
+    "status": "draft"
+  },
+  {
+    "id": "m010",
+    "turns": [
+      {
+        "role": "user",
+        "content": "What is a sidecar container?"
+      },
+      {
+        "role": "assistant",
+        "content": "It is a helper container in the same pod."
+      },
+      {
+        "role": "user",
+        "content": "What did I ask you first?"
+      }
+    ],
+    "expected_intent": "conversational",
+    "expected_behavior": "restates the very first question in the session",
+    "tags": [
+      "type:multiturn",
+      "lang:en"
+    ],
+    "status": "draft"
+  }
+]

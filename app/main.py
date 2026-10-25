@@ -1,15 +1,19 @@
-import logfire
 import uuid
+from typing import Literal
+
+import logfire
+from fastapi import FastAPI, Request
+from fastapi.responses import JSONResponse, PlainTextResponse
 from pydantic import BaseModel, Field, field_validator
 
 import app.startup_patches
-from app.config import settings, validate_env_vars
-from fastapi import FastAPI, Request
-from fastapi.responses import JSONResponse, PlainTextResponse
-from app.exceptions import RAGError
-from app.observability import configure_logfire, instrument_fastapi
 from app.agents.graph import rag_agent
+from app.config import settings, validate_env_vars
+from app.exceptions import FeedbackError, RAGError
+from app.guardrails import input_guard
+from app.observability import configure_logfire, instrument_fastapi
 from app.services.retrieval.qdrant_service import get_qdrant_client
+
 # from app.guardrails import initialize_rails, guard
 
 
@@ -45,6 +49,14 @@ class QueryResponse(BaseModel):
     sources: list[str]
     thought_process: list[str]
     intent: str
+    sources_meta: list[dict] = Field(default_factory=list)
+    trace_id: str | None = None
+
+
+class FeedbackRequest(BaseModel):
+    trace_id: str = Field(..., min_length=1, max_length=128)
+    rating: Literal["up", "down"]
+    comment: str | None = Field(default=None, max_length=1000)
 
 
 # ---------------------------------------------------------------------------
@@ -132,10 +144,13 @@ def get_graph():
 
 @app.post("/query", response_model=QueryResponse)
 def query(request: QueryRequest):
-    config = {"configurable": {"thread_id": request.thread_id}}
+    safe_query = input_guard(request.q)
+    run_uuid = uuid.uuid4()
+    config = {"configurable": {"thread_id": request.thread_id},
+              "run_id": run_uuid, "metadata": {"thread_id": request.thread_id}}
 
     initial_state = {
-        "messages": [{"role": "user", "content": request.q}],
+        "messages": [{"role": "user", "content": safe_query}],
         "current_query": "",
         "intent": "",
         "documents": [],
@@ -147,7 +162,7 @@ def query(request: QueryRequest):
     # No blanket try/except here: failures propagate as RAGError (mapped to the right
     # HTTP status by handle_rag_error) or as unexpected errors (500 by the catch-all).
     # The span records the exception either way.
-    with logfire.span("rag query", thread_id=request.thread_id, question=request.q) as span:
+    with logfire.span("rag query", thread_id=request.thread_id, question=safe_query) as span:
         result = rag_agent.invoke(initial_state, config=config)
 
         answer = result.get("final_answer", "")
@@ -165,4 +180,18 @@ def query(request: QueryRequest):
         sources=result.get("documents", []),
         thought_process=plan,
         intent=intent,
+        sources_meta=result.get("sources", []),
+        trace_id=str(run_uuid),
     )
+
+
+@app.post("/feedback")
+def submit_feedback(request: FeedbackRequest):
+    try:
+        from langsmith import Client
+        Client().create_feedback(run_id=request.trace_id, key="user_rating",
+                                 score=1 if request.rating == "up" else 0,
+                                 comment=request.comment)
+        return {"status": "ok"}
+    except Exception as exc:
+        raise FeedbackError("Unable to persist user feedback") from exc

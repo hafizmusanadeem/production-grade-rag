@@ -1,3 +1,7 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
 [project]
 name = "rag-production-grade"
 version = "0.1.0"
@@ -39,14 +43,26 @@ dependencies = [
 [project.optional-dependencies]
 eval = [
     "deepeval>=4.1",
-    "langfuse",
+    "langsmith",
     "langchain-openrouter",
     "pytest",
+    "ruff",
 ]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+select = ["E", "F", "I", "B"]
+ignore = ["E501"]
+exclude = ["eval_reference_folder", "DATA", "DATA_eval", ".venv"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+pythonpath = ["."]
 markers = [
     "unit",            # default fast offline tests
     "eval",           # slow online/judge tests that need API keys
 ]
+
+[tool.setuptools.packages.find]
+include = ["app*", "evals*"]

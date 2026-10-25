@@ -1,5 +1,5 @@
-from typing import TypedDict, List, Annotated
 import operator
+from typing import Annotated, List, TypedDict
 
 # Planner intents. The graph routes on these, not on magic strings in current_query.
 INTENT_TECHNICAL = "technical"
@@ -7,7 +7,7 @@ INTENT_CONVERSATIONAL = "conversational"
 INTENT_OUT_OF_SCOPE = "out_of_scope"
 
 
-class AgentState(TypedDict):
+class AgentState(TypedDict, total=False):
     """
     Using Annotated with operator.add ensures that messages are appended to the history rather than replaced.
     """
@@ -18,3 +18,7 @@ class AgentState(TypedDict):
     plan: List[str]
     status: str
     final_answer: str
+    timings_ms: dict
+    usage: dict
+    sources: list
+    declined: bool

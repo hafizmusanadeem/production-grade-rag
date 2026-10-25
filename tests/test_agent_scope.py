@@ -5,13 +5,13 @@ import pytest
 
 from app.agents.graph import route_planner, route_retriever
 from app.agents.nodes import planner as planner_module
-from app.agents.nodes import retriever as retriever_module
 from app.agents.nodes.decline import NO_CONTEXT_MESSAGE, OUT_OF_SCOPE_MESSAGE, decline_node
 from app.agents.nodes.planner import parse_planner_decision, planner_node
 from app.agents.nodes.retriever import retrieve_node
 from app.agents.state import INTENT_CONVERSATIONAL, INTENT_OUT_OF_SCOPE, INTENT_TECHNICAL
 from app.config import settings
 from app.exceptions import LLMServiceError, RerankError, RetrievalError
+from app.services.retrieval import retrieval_pipeline as pipeline_module
 
 
 # ------------------------------------------------------------ planner parsing
@@ -59,7 +59,7 @@ class _FakeLLM:
     def __init__(self, content=None, exc=None):
         self.content, self.exc = content, exc
 
-    def invoke(self, prompt):
+    def invoke(self, prompt, **kwargs):
         if self.exc:
             raise self.exc
         return SimpleNamespace(content=self.content)
@@ -113,7 +113,7 @@ def test_decline_no_context_message():
 
 # ------------------------------------------------------------ retriever node
 def _chunk(score, text="chunk text"):
-    return SimpleNamespace(page_content=text, rerank_score=score)
+    return SimpleNamespace(page_content=text, rerank_score=score, original_score=0.8, chunk_id="chunk-1", metadata={"file_name":"x.docx"})
 
 
 def _tech_state():
@@ -121,9 +121,9 @@ def _tech_state():
 
 
 def test_retriever_declines_when_nothing_clears_threshold(monkeypatch):
-    monkeypatch.setattr(retriever_module, "search_qdrant", lambda **_: [object()])
+    monkeypatch.setattr(pipeline_module, "search_qdrant", lambda **_: [object()])
     monkeypatch.setattr(
-        retriever_module, "rerank_documents",
+        pipeline_module, "rerank_documents",
         lambda **_: [_chunk(settings.RERANK_MIN_SCORE / 10)],
     )
     result = retrieve_node(_tech_state())
@@ -131,9 +131,9 @@ def test_retriever_declines_when_nothing_clears_threshold(monkeypatch):
 
 
 def test_retriever_keeps_only_relevant_chunks(monkeypatch):
-    monkeypatch.setattr(retriever_module, "search_qdrant", lambda **_: [object(), object()])
+    monkeypatch.setattr(pipeline_module, "search_qdrant", lambda **_: [object(), object()])
     monkeypatch.setattr(
-        retriever_module, "rerank_documents",
+        pipeline_module, "rerank_documents",
         lambda **_: [_chunk(0.9, "good"), _chunk(settings.RERANK_MIN_SCORE / 10, "noise")],
     )
     result = retrieve_node(_tech_state())
@@ -141,12 +141,12 @@ def test_retriever_keeps_only_relevant_chunks(monkeypatch):
 
 
 def test_retriever_no_candidates_skips_rerank(monkeypatch):
-    monkeypatch.setattr(retriever_module, "search_qdrant", lambda **_: [])
+    monkeypatch.setattr(pipeline_module, "search_qdrant", lambda **_: [])
 
     def _must_not_run(**_):
         raise AssertionError("rerank should not run with zero candidates")
 
-    monkeypatch.setattr(retriever_module, "rerank_documents", _must_not_run)
+    monkeypatch.setattr(pipeline_module, "rerank_documents", _must_not_run)
     assert retrieve_node(_tech_state())["documents"] == []
 
 
@@ -154,7 +154,7 @@ def test_retriever_wraps_search_failure(monkeypatch):
     def _boom(**_):
         raise TimeoutError("qdrant down")
 
-    monkeypatch.setattr(retriever_module, "search_qdrant", _boom)
+    monkeypatch.setattr(pipeline_module, "search_qdrant", _boom)
     with pytest.raises(RetrievalError):
         retrieve_node(_tech_state())
 
@@ -163,7 +163,7 @@ def test_retriever_wraps_rerank_failure(monkeypatch):
     def _boom(**_):
         raise RuntimeError("model missing")
 
-    monkeypatch.setattr(retriever_module, "search_qdrant", lambda **_: [object()])
-    monkeypatch.setattr(retriever_module, "rerank_documents", _boom)
+    monkeypatch.setattr(pipeline_module, "search_qdrant", lambda **_: [object()])
+    monkeypatch.setattr(pipeline_module, "rerank_documents", _boom)
     with pytest.raises(RerankError):
         retrieve_node(_tech_state())

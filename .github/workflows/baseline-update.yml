@@ -1,0 +1,105 @@
+name: baseline-update
+
+on:
+  workflow_dispatch:
+    inputs:
+      label:
+        description: "What changed in this run (goes into the snapshot label and PR title)"
+        required: true
+        type: string
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: baseline-update
+  cancel-in-progress: false
+
+jobs:
+  baseline-update:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+
+      - name: Install from lockfile
+        run: uv sync --frozen --extra eval
+
+      - name: Precondition - goldens are human-reviewed
+        run: python -m evals.tools.check_golden_status --fail-on-draft
+
+      - name: Set QDRANT_COLLECTION to the frozen eval collection
+        run: echo "QDRANT_COLLECTION=${{ vars.QDRANT_COLLECTION || 'rag-eval-collection' }}" >> "$GITHUB_ENV"
+
+      - name: Run the full suite as the new baseline
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          QDRANT_API_KEY: ${{ secrets.QDRANT_API_KEY }}
+          QDRANT_CLUSTER_ENDPOINT: ${{ secrets.QDRANT_CLUSTER_ENDPOINT }}
+          PORTKEY_API_KEY: ${{ secrets.PORTKEY_API_KEY }}
+          PORTKEY_SLUG_1: ${{ secrets.PORTKEY_SLUG_1 }}
+          PORTKEY_SLUG_2: ${{ secrets.PORTKEY_SLUG_2 }}
+          PORTKEY_CONFIG_ID: ${{ secrets.PORTKEY_CONFIG_ID }}
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+          LOGFIRE_TOKEN: ${{ secrets.LOGFIRE_TOKEN }}
+          LANGSMITH_API_KEY: ${{ secrets.LANGSMITH_API_KEY }}
+        run: python -m evals.run_suite --baseline --label "${{ inputs.label }}" --quiet
+
+      - name: Smoke baseline
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          QDRANT_API_KEY: ${{ secrets.QDRANT_API_KEY }}
+          QDRANT_CLUSTER_ENDPOINT: ${{ secrets.QDRANT_CLUSTER_ENDPOINT }}
+          PORTKEY_API_KEY: ${{ secrets.PORTKEY_API_KEY }}
+          PORTKEY_SLUG_1: ${{ secrets.PORTKEY_SLUG_1 }}
+          PORTKEY_SLUG_2: ${{ secrets.PORTKEY_SLUG_2 }}
+          PORTKEY_CONFIG_ID: ${{ secrets.PORTKEY_CONFIG_ID }}
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+          LOGFIRE_TOKEN: ${{ secrets.LOGFIRE_TOKEN }}
+          LANGSMITH_API_KEY: ${{ secrets.LANGSMITH_API_KEY }}
+        run: |
+          python -m evals.run_suite --limit 20 --baseline \
+            --out baselines/baseline_smoke.json --label "${{ inputs.label }} (smoke)" --quiet
+
+      - name: Diff old vs new baseline into compare.md
+        continue-on-error: true
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          QDRANT_API_KEY: ${{ secrets.QDRANT_API_KEY }}
+          QDRANT_CLUSTER_ENDPOINT: ${{ secrets.QDRANT_CLUSTER_ENDPOINT }}
+          PORTKEY_API_KEY: ${{ secrets.PORTKEY_API_KEY }}
+          PORTKEY_SLUG_1: ${{ secrets.PORTKEY_SLUG_1 }}
+          PORTKEY_SLUG_2: ${{ secrets.PORTKEY_SLUG_2 }}
+          PORTKEY_CONFIG_ID: ${{ secrets.PORTKEY_CONFIG_ID }}
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+          LOGFIRE_TOKEN: ${{ secrets.LOGFIRE_TOKEN }}
+        run: |
+          set +e
+          git show "origin/${{ github.ref_name }}:baselines/baseline.json" > /tmp/old_baseline.json
+          python -m evals.compare --markdown --baseline /tmp/old_baseline.json \
+            --candidate baselines/baseline.json > compare.md
+          echo "compare exit=$? (0/1/2 are all expected here; this is the review material)"
+          set -e
+          echo "### compare.md" >> "$GITHUB_STEP_SUMMARY"
+          head -200 compare.md >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Open the baseline PR
+        uses: peter-evans/create-pull-request@v7
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          branch: baseline/${{ github.run_id }}
+          commit-message: "chore(baselines): ${{ inputs.label }}"
+          title: "Baseline update: ${{ inputs.label }}"
+          body-path: compare.md
+          labels: baseline
+          add-paths: |
+            baselines/baseline.json
+            baselines/baseline_smoke.json
