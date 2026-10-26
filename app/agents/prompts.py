@@ -68,7 +68,7 @@ Do not use outside knowledge. If context lacks the answer, say so instead of gue
 
 
 def build_prompt(query, context=None, intent="technical", history=None):
-    history_str = "\\n".join(
+    history_str = "\n".join(
         f"{'User' if item.get('role') == 'user' else 'Assistant'}: {item.get('content', '')}"
         for item in (history or []) if isinstance(item, dict)
     )

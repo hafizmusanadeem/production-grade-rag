@@ -15,7 +15,7 @@ class GuardResult:
 
 def input_guard(query):
     value = re.sub(r"[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]", " ", str(query or ""))
-    value = re.sub(r"\\s+", " ", value).strip()
+    value = re.sub(r"\s+", " ", value).strip()
     if CANARY.casefold() in value.casefold():
         raise InputRejectedError("Internal marker included in input")
     return value

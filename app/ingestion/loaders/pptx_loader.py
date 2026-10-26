@@ -38,7 +38,7 @@ class PPTXLoader(BaseLoader):
                 if notes: texts.append("Speaker notes: "+notes)
             if not texts: continue
             metadata=self._base_metadata(path,"pptx"); metadata.update({"slide":num,"title":title})
-            docs.append(LoadedDocument(page_content="\\n".join(texts),metadata=metadata))
+            docs.append(LoadedDocument(page_content="\n".join(texts),metadata=metadata))
         if not docs: raise ValueError(f"No extractable text found in PPTX: {path}")
         self._record_load_metrics(path,docs,file_type="pptx",slide_count=len(presentation.slides),extracted_slides=len(docs))
         return docs

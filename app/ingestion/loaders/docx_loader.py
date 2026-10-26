@@ -35,7 +35,7 @@ class DOCXLoader(BaseLoader):
             values=[node.text for node in box.xpath(".//w:t") if node.text]
             text=" ".join(v.strip() for v in values if v.strip()).strip()
             if text and text not in parts: parts.append(text)
-        content="\\n\\n".join(parts).strip()
+        content="\n\n".join(parts).strip()
         if not content: raise ValueError(f"No extractable text found in DOCX: {path}")
         metadata=self._base_metadata(path,"docx"); metadata.update({"paragraph_count":paragraph_count,"table_count":table_count})
         docs=[LoadedDocument(page_content=content,metadata=metadata)]
