@@ -14,3 +14,5 @@ baselines/candidate.json
 evals/artifacts/
 DATA/embeddings/
 DATA_eval/
+report.json
+test-report/
